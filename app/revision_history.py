@@ -6,7 +6,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from .cip_domain import _take_route, revision_product
-from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP, PRODUCT_MEP
+from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP
 from .cip_revision import copy_cip_revision
 from .database import get_db
 from .models import (
@@ -70,21 +70,34 @@ def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: b
             config_type=row.config_type,
             sort_order=row.sort_order,
         ))
+
+    custom_id_map: dict[int, int] = {}
     for row in db.query(EstimateCustomApplication).filter(EstimateCustomApplication.revision_id == src.id).all():
-        db.add(EstimateCustomApplication(
+        copied = EstimateCustomApplication(
             revision_id=rev.id,
             description=row.description,
             complexity=row.complexity,
             sort_order=row.sort_order,
-        ))
+        )
+        db.add(copied)
+        db.flush()
+        custom_id_map[row.id] = copied.id
     if rebase:
         core.append_catalog_entries(db, rev)
 
     # A new working revision must begin as an exact estimating copy of its source.
     for row in db.query(DetailAdjustment).filter(DetailAdjustment.revision_id == src.id).all():
+        line_key = row.line_key
+        if line_key.startswith("CUSTOM:"):
+            try:
+                old_id = int(line_key.split(":", 1)[1])
+                if old_id in custom_id_map:
+                    line_key = f"CUSTOM:{custom_id_map[old_id]}"
+            except (TypeError, ValueError):
+                pass
         db.add(DetailAdjustment(
             revision_id=rev.id,
-            line_key=row.line_key,
+            line_key=line_key,
             description=row.description,
             mod_hours=row.mod_hours,
             notes=row.notes,
