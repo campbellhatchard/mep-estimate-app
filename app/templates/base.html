@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}MEP Estimate{% endblock %}</title>
+  <title>{% block title %}Cloud Inventory Estimator{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/cip.css">
 </head>
 <body>
 <header class="topbar">
   <a class="brand-logo-link" href="/estimates" aria-label="Cloud Inventory home"><img class="brand-logo" src="/static/ci-logo-full.webp" alt="Cloud Inventory"></a>
-  <div class="product-name">MEP Estimate</div>
+  <div class="product-name">Services Estimator</div>
   {% if user %}
   <nav class="global-nav">
     <a href="/estimates">Estimates</a><a href="/data">Calculation Data</a>
@@ -19,8 +20,9 @@
   {% endif %}
 </header>
 {% if rev %}
+{% set displayed_product = 'CIP' if rev.engine_version and rev.engine_version.startswith('CIP-') else 'MEP' %}
 <div class="estimate-head">
-  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="muted">Revision {{ rev.revision_no }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
+  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
   <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
 </div>
 <nav class="tabs">
