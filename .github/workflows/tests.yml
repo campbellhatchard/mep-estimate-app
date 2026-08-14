@@ -19,5 +19,9 @@ jobs:
           cache: 'pip'
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
+      - name: Validate Alembic migrations
+        run: |
+          rm -f /tmp/mep_estimate_migration.db
+          DATABASE_URL=sqlite:////tmp/mep_estimate_migration.db PYTHONPATH=. alembic upgrade head
       - name: Run tests
         run: PYTHONPATH=. pytest -q
