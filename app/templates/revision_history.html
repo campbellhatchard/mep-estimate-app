@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% set active_tab='history' %}
+{% block title %}Revision History — {{ estimate.estimate_number }}{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row">
+    <div><h1>Revision History</h1><div class="subtle">Estimate {{ estimate.estimate_number }} · {{ product_type }} · Every revision is retained under the same Estimate Number.</div></div>
+    <a class="button secondary" href="/estimate/{{ rev.id }}">Back to Revision {{ rev.revision_no }}</a>
+  </div>
+  {% if current_approved %}
+  <div class="card revision-current-card"><strong>Current Approved Revision</strong><span>Rev {{ current_approved.revision_no }} · {{ '%.0f'|format(current_approved.calculated_hours) }} hours · {{ '{:,.2f}'.format(current_approved.calculated_fees) }}</span><a class="button small" href="/estimate/{{ current_approved.id }}">View Approved Revision</a></div>
+  {% elif working %}<div class="card revision-current-card"><strong>No approved revision yet.</strong><span>Rev {{ working.revision_no }} is currently {{ working.status }}.</span></div>{% endif %}
+  {% if working %}<div class="schedule-note"><strong>Working revision:</strong> Rev {{ working.revision_no }} is {{ working.status }}. A second Draft/Review revision cannot be created until this revision is approved or otherwise resolved.</div>{% endif %}
+  <div class="data-table-wrap"><table class="data-table revision-table"><thead><tr><th>Revision</th><th>Status</th><th>Customer</th><th class="num">Hours</th><th class="num">Fees</th><th>Calculation Model</th><th>Created</th><th>Approved</th><th>Actions</th></tr></thead><tbody>
+  {% for row in rows %}{% set r=row.rev %}<tr class="{% if r.id==rev.id %}revision-selected{% endif %}">
+    <td><strong>Rev {{ r.revision_no }}</strong>{% if r.id==rev.id %}<div class="subtle">Currently viewing</div>{% endif %}</td>
+    <td><span class="status status-{{ r.status|lower }}">{{ r.status }}</span>{% if row.is_current_approved %}<div class="subtle">Current approved</div>{% endif %}</td>
+    <td>{{ r.customer or '—' }}</td><td class="num">{{ '%.0f'|format(r.calculated_hours) }}</td><td class="num">{{ '{:,.2f}'.format(r.calculated_fees) }}</td>
+    <td><div>{{ row.config_name }}</div><div class="subtle">Engine {{ r.engine_version }}</div></td>
+    <td>{{ r.created_at.strftime('%m/%d/%Y %H:%M') }}<div class="subtle">{{ row.created_by }}</div></td>
+    <td>{% if row.approved_at %}{{ row.approved_at.strftime('%m/%d/%Y %H:%M') }}<div class="subtle">{{ row.approved_by }}</div>{% else %}—{% endif %}</td>
+    <td><div class="action-row"><a class="button small" href="/estimate/{{ r.id }}">{% if r.status in ['APPROVED','FINAL','SUPERSEDED'] %}View{% else %}Open{% endif %}</a>{% if r.status in ['APPROVED','FINAL','SUPERSEDED'] and not working %}<form method="post" action="/estimate/{{ r.id }}/new-revision"><button class="button small" type="submit">Create New Revision From This</button></form>{% endif %}</div></td>
+  </tr>{% else %}<tr><td colspan="9" class="empty">No revisions found.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="card revision-policy-note"><strong>Revision control:</strong> Approved and Superseded revisions are immutable. Creating a new revision copies the selected historical estimate into a new Draft; it never reopens or overwrites the historical record.</div>
+</div>
+{% endblock %}
