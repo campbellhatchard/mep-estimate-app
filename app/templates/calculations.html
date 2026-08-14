@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% set active_tab='calculations' %}{% block title %}Calculations {{estimate.estimate_number}}{% endblock %}{% block pageclass %}sheet-page{% endblock %}
+{% block content %}
+<div class="actionbar"><div><h1 class="compact-title">Calculation Details</h1><div class="calc-kpis"><span>Estimate <b>{{'%.0f'|format(summary.hours)}} h</b></span><span>Fees <b>{{'{:,.2f}'.format(summary.fees)}}</b></span><span>Unit Test <b>{{'%.0f%%'|format(summary.unit_test_factor*100)}}</b></span><span>Delivery Markup <b>{{'%.0f%%'|format(summary.markup*100)}}</b></span></div></div>{% if not readonly %}<button form="calcForm" class="primary">Save Adjustments</button>{% endif %}</div>
+<form id="calcForm" method="post">
+{% set ns=namespace(i=0) %}
+<div class="card table-wrap"><table class="calc-table"><thead><tr><th>Description</th><th>Standard Hours</th><th>Standard Adjust</th><th>Standard Extended</th><th>Adjust Notes</th><th>Rule</th></tr></thead><tbody>
+{% for phase,lines,total in phases %}
+<tr class="phase-row"><td>{{phase}}</td><td class="num">{{'%.0f'|format(total.standard)}}</td><td></td><td class="num">{{'%.0f'|format(total.extended)}}</td><td colspan="2"></td></tr>
+{% for line in lines %}<tr><td>{{line.description}}</td><td class="num calculated">{{'%.1f'|format(line.standard_hours)}}</td><td><input class="num adjust-input" name="adjust_{{ns.i}}" type="number" step="0.5" value="{{line.adjust_hours}}" {% if readonly %}disabled{% endif %}></td><td class="num total-cell">{{'%.1f'|format(line.extended_hours)}}</td><td><input name="notes_{{ns.i}}" value="{{line.adjust_notes}}" placeholder="Required for non-zero adjustment" {% if readonly %}disabled{% endif %}></td><td>{% if line.trace %}<button type="button" class="trace-button" onclick="toggleTrace('trace{{ns.i}}')">Explain</button><div id="trace{{ns.i}}" class="trace hidden">{{line.trace}}</div>{% endif %}</td><input type="hidden" name="line_key_{{ns.i}}" value="{{line.key}}"></tr>{% set ns.i=ns.i+1 %}{% endfor %}
+{% endfor %}
+<tr class="grand-total"><td>Total Hours</td><td></td><td></td><td class="num">{{'%.0f'|format(summary.hours)}}</td><td colspan="2"></td></tr>
+</tbody></table></div><input type="hidden" name="line_count" value="{{ns.i}}"></form>
+{% endblock %}

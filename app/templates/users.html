@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% set active_nav='users' %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row"><div><h1>User Management</h1><div class="subtle">Usernames preserve entered capitalization but authenticate case-insensitively.</div></div></div>
+  <div class="two-panel">
+    <section class="card"><h2>Add User</h2><form method="post" action="/admin/users/new" class="stack-form"><label>Username<input name="username" required></label><label>Password<input name="password" type="password" minlength="8" required></label><label>Role<select name="role"><option>ESTIMATOR</option><option>REVIEWER</option><option>APPROVER</option><option>READ_ONLY</option><option>ADMIN</option></select></label><button class="button primary">Create User</button></form></section>
+    <section class="card"><h2>Current Users</h2><table class="data-table"><thead><tr><th>Username</th><th>Role</th><th>Active</th><th>Created</th></tr></thead><tbody>{% for u in users %}<tr><td>{{ u.username }}</td><td>{{ u.role }}</td><td>{{ 'Yes' if u.active else 'No' }}</td><td>{{ u.created_at.strftime('%Y-%m-%d') }}</td></tr>{% endfor %}</tbody></table></section>
+  </div>
+</div>
+{% endblock %}

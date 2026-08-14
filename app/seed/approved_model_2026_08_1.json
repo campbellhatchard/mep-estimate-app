@@ -1,0 +1,974 @@
+{
+  "configuration_name": "MEP Estimate Model 2026.08.1",
+  "solutions": [
+    {
+      "key": "EPP_CLOUD",
+      "label": "EPP Cloud",
+      "load_test_effort": 0,
+      "adw_hours": 8,
+      "on_prem_hours": 0,
+      "cloud_flag": 8,
+      "ha_valid": false,
+      "gateway_valid": false
+    },
+    {
+      "key": "EPP_ON_PREM",
+      "label": "EPP On Prem",
+      "load_test_effort": 0,
+      "adw_hours": 8,
+      "on_prem_hours": 8,
+      "cloud_flag": 0,
+      "ha_valid": false,
+      "gateway_valid": false
+    },
+    {
+      "key": "MEP_CLOUD",
+      "label": "MEP Cloud",
+      "load_test_effort": 8,
+      "adw_hours": 8,
+      "on_prem_hours": 0,
+      "cloud_flag": 1,
+      "ha_valid": false,
+      "gateway_valid": true
+    },
+    {
+      "key": "MEP_ON_PREM",
+      "label": "MEP On Prem",
+      "load_test_effort": 12,
+      "adw_hours": 8,
+      "on_prem_hours": 16,
+      "cloud_flag": 0,
+      "ha_valid": true,
+      "gateway_valid": false
+    },
+    {
+      "key": "PLATFORM_MOVE_ON_PREM",
+      "label": "Platform Move On Prem",
+      "load_test_effort": 8,
+      "adw_hours": 8,
+      "on_prem_hours": 16,
+      "cloud_flag": 0,
+      "ha_valid": true,
+      "gateway_valid": false
+    },
+    {
+      "key": "PLATFORM_MOVE_TO_CLOUD",
+      "label": "Platform Move To Cloud",
+      "load_test_effort": 8,
+      "adw_hours": 8,
+      "on_prem_hours": 0,
+      "cloud_flag": 1,
+      "ha_valid": false,
+      "gateway_valid": true
+    },
+    {
+      "key": "SMALL_PROJECT",
+      "label": "Small Project",
+      "load_test_effort": 0,
+      "adw_hours": 0,
+      "on_prem_hours": 0,
+      "cloud_flag": 0,
+      "ha_valid": false,
+      "gateway_valid": false
+    }
+  ],
+  "erps": [
+    {
+      "key": "SAP_6",
+      "label": "SAP 6",
+      "base_effort": 12
+    },
+    {
+      "key": "SAP_HANA_HANA_22",
+      "label": "SAP HANA / HANA 22",
+      "base_effort": 12
+    },
+    {
+      "key": "ORACLE_EBS",
+      "label": "Oracle EBS",
+      "base_effort": 12
+    },
+    {
+      "key": "ORACLE_FUSION",
+      "label": "Oracle Fusion",
+      "base_effort": 30
+    },
+    {
+      "key": "ORACLE_JD_EDWARDS_E1",
+      "label": "Oracle JD Edwards E1",
+      "base_effort": 12
+    },
+    {
+      "key": "ORACLE_JD_EDWARDS_WORLD",
+      "label": "Oracle JD Edwards World",
+      "base_effort": 12
+    },
+    {
+      "key": "ORACLE_NET_SUITE",
+      "label": "Oracle Net Suite",
+      "base_effort": 20
+    },
+    {
+      "key": "OTHER",
+      "label": "Other",
+      "base_effort": 0
+    },
+    {
+      "key": "STAND_ALONE",
+      "label": "Stand Alone",
+      "base_effort": 10
+    }
+  ],
+  "user_counts": [
+    {
+      "key": "USER_1",
+      "label": "1 to 50",
+      "multiplier": 1,
+      "handheld_setup_hours": 4,
+      "printer_setup_hours": 4
+    },
+    {
+      "key": "USER_2",
+      "label": "51 to 100",
+      "multiplier": 2,
+      "handheld_setup_hours": 8,
+      "printer_setup_hours": 8
+    },
+    {
+      "key": "USER_3",
+      "label": "101 to 250",
+      "multiplier": 3,
+      "handheld_setup_hours": 8,
+      "printer_setup_hours": 16
+    },
+    {
+      "key": "USER_4",
+      "label": "250 to 500",
+      "multiplier": 4,
+      "handheld_setup_hours": 8,
+      "printer_setup_hours": 16
+    },
+    {
+      "key": "USER_5",
+      "label": "501 to 1000",
+      "multiplier": 5,
+      "handheld_setup_hours": 16,
+      "printer_setup_hours": 32
+    },
+    {
+      "key": "USER_6",
+      "label": "Over 1000",
+      "multiplier": 6,
+      "handheld_setup_hours": 16,
+      "printer_setup_hours": 40
+    }
+  ],
+  "yes_no": [
+    "Yes",
+    "No"
+  ],
+  "customer_types": [
+    "Install_Base",
+    "Net_New"
+  ],
+  "go_live": [
+    "None",
+    "Remote All",
+    "On-Site All",
+    "On-Site Primary Remote Others"
+  ],
+  "test_effort": [
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.5,
+    0.1,
+    0.15
+  ],
+  "security_methods": [
+    "None",
+    "LDAP",
+    "OKTA",
+    "SAML"
+  ],
+  "epp_install": [
+    "No",
+    "On Prem",
+    "Cloud"
+  ],
+  "epp_integration": [
+    "None",
+    "File Drop",
+    "Web Service"
+  ],
+  "app_types": [
+    {
+      "label": "No Config",
+      "hours": 0
+    },
+    {
+      "label": "Baseline",
+      "hours": 1
+    },
+    {
+      "label": "Baseline_4",
+      "hours": 4
+    },
+    {
+      "label": "Mod Required",
+      "hours": 16
+    }
+  ],
+  "custom_effort": [
+    {
+      "label": "No Config",
+      "hours": 0
+    },
+    {
+      "label": "Simple",
+      "hours": 8
+    },
+    {
+      "label": "Moderate",
+      "hours": 16
+    },
+    {
+      "label": "Complex",
+      "hours": 32
+    },
+    {
+      "label": "Very Complex",
+      "hours": 80
+    }
+  ],
+  "package_types": [
+    {
+      "label": "No Config",
+      "hours": 0
+    },
+    {
+      "label": "PKG16",
+      "hours": 24
+    },
+    {
+      "label": "PKG32",
+      "hours": 64
+    }
+  ],
+  "delivery_methods": [
+    {
+      "label": "Standard Project",
+      "markup": 0
+    },
+    {
+      "label": "Add 10%",
+      "markup": 0.1
+    },
+    {
+      "label": "Add 20 %",
+      "markup": 0.2
+    },
+    {
+      "label": "Add 30%",
+      "markup": 0.3
+    },
+    {
+      "label": "Add 40%",
+      "markup": 0.4
+    },
+    {
+      "label": "Add 50%",
+      "markup": 0.5
+    }
+  ],
+  "schedule_status": [
+    "Planned",
+    "On Hold- Customer",
+    "On Hold- CI",
+    "Scheduled",
+    "WIP",
+    "Testing",
+    "Complete"
+  ],
+  "currencies": [
+    "Australian Dollar",
+    "British Pound",
+    "Canadian Dollar",
+    "Euro",
+    "New Zealand Dollar",
+    "US Dollars",
+    "ZZ1",
+    "ZZ2",
+    "ZZ3",
+    "ZZ4",
+    "ZZ5",
+    "ZZ6",
+    "ZZ7"
+  ],
+  "entities": [
+    "Data Systems International, Inc. dba Cloud Inventory\u00ae (\"Cloud Inventory\")",
+    "Data Systems International (North America) Inc.",
+    "Data Systems International EMEA Ltd",
+    "Data Systems International Asia Pacific Pty. Ltd.",
+    "Data Systems International Holdings Pte Ltd.",
+    "DSI (Hong Kong) Limited",
+    "eNSYNC Solutions, Inc."
+  ],
+  "erp_applications": {
+    "SAP 6": [
+      "Cycle Count",
+      "Goods Issue to Cost Cent",
+      "Goods Issue To Plant Maint",
+      "Goods Issue To Production",
+      "Goods Issue To Scrap",
+      "Goors Receipt to Production",
+      "Inventory Iquiry",
+      "Plant To Plant Transfer",
+      "Purchase ORder Receipt",
+      "SLOC to SLOC Transfer",
+      "Stock Transfer",
+      "Qual/block Unrestricted Xfer"
+    ],
+    "SAP HANA / HANA 22": [
+      "Cycle Count",
+      "Goods Issue to Cost Cent",
+      "Goods Issue To Plant Maint",
+      "Goods Issue To Production",
+      "Goods Issue To Scrap",
+      "Goors Receipt to Production",
+      "Inventory Iquiry",
+      "Plant To Plant Transfer",
+      "Purchase ORder Receipt",
+      "SLOC to SLOC Transfer",
+      "Stock Transfer",
+      "Qual/block Unrestricted Xfer"
+    ],
+    "Oracle EBS": [
+      "Account Alias Issue",
+      "Account Alias Receipt",
+      "Move Order Pick",
+      "Putaway",
+      "WO Completion",
+      "Work Order Pick",
+      "WO Issue",
+      "Cycle Count",
+      "Inventory Inquiry",
+      "Misc Issue",
+      "Misc Receipt",
+      "Receiving",
+      "Ship Confirmation",
+      "Subinventory Transfer"
+    ],
+    "Oracle Fusion": [
+      "Account Aliasis Isue",
+      "Account Alias Receipt",
+      "Correct Receipt",
+      "Create Transfer Order",
+      "Create Work Order",
+      "Cycle Count",
+      "Interorg Transfer",
+      "Inventory Inquiry",
+      "Lot Inquiry",
+      "Miscelanious Issue",
+      "Miscelanious Receipt",
+      "Miscelanious Transaction",
+      "Orderless Completions",
+      "Orderless Returns",
+      "Physical Inventory",
+      "Pick Slip Confirmation",
+      "Project Alias Issue",
+      "Project Alian Receipt",
+      "Project Miscellaneous Issue",
+      "Project Mover Order Return",
+      "Putaway",
+      "Receipt Inspection",
+      "Receiving",
+      "Reeturn Receipt",
+      "Review Completed Transaction",
+      "Ship Confirm",
+      "Sub Inventory Transfer",
+      "WO Process Mfg Completion",
+      "WO Completions",
+      "WO Issue",
+      "WO Resource Reporting",
+      "Upload Offline Data"
+    ],
+    "Oracle JD Edwards E1": [
+      "Cycle Count Directed",
+      "Cycle Count - Non Directed Inventory Transfer",
+      "Inv Transfer Label Option",
+      "Inventory Inquiry",
+      "Invenotry Issue",
+      "Inventory Reclassification",
+      "Inventory Adjustment Negative",
+      "inventory Adjustment Positive",
+      "Lot Status Update",
+      "Pack Confirmation",
+      "Pick Confirmation",
+      "P O Receipt Label Option",
+      "Receipt Routing",
+      "RMA Returns",
+      "Ship Confirmation",
+      "Warehouse Confirmation",
+      "Work Order Issues",
+      "W O Comp Label Option",
+      "Inventory Cart Transfer",
+      "Work Order Tiem Entry",
+      "Work Order Parts Inquiry",
+      "Work Order Reversal",
+      "Kanban Checkin",
+      "Kanban Check Out",
+      "Fixed Asset Transfer",
+      "Fixed Aset Inquiry",
+      "Fixed Asset Create Asset",
+      "Fixed Asset Disposal",
+      "Fixed Asset Count",
+      "Fixed Asset Change Owner"
+    ],
+    "Oracle JD Edwards World": [
+      "Cycle Count Directed",
+      "Cycle Count Non Directed",
+      "Inventory Transfer",
+      "Inventory Inquiry",
+      "Inventory Issue",
+      "Inventory Recalss",
+      "Inventory Adjust POS",
+      "Inventory Adjust NEG",
+      "Lot Status Update",
+      "Pack Confirmation",
+      "Pick Conifirmation",
+      "Purchase Order Receipt",
+      "Receipt Routing",
+      "RMA Returns",
+      "Ship Confirmation",
+      "Warehouse Confirmation",
+      "Work Order Issues",
+      "Work Order Completions",
+      "Inv Cart Transfer Label",
+      "Inv Cart Transfer"
+    ],
+    "Oracle Net Suite": [
+      "AsjuInventory Adjustment NEGstment Negative",
+      "Inventory Adjustment POS",
+      "Bin Putaway Transfer",
+      "Bin Putaway",
+      "Bin Transfer",
+      "Inventory Count Entry",
+      "Inventlory Inquiry",
+      "Location Transfer",
+      "LPN Maintenance",
+      "Order Pack",
+      "Pack and Ship",
+      "Pick Confirmation",
+      "Purchase Order Receipt",
+      "RMA Receipt",
+      "Ship Confirmation",
+      "TO Receipt",
+      "Wave Pick",
+      "WO Assembly Build",
+      "WO Completion",
+      "WO Issue Pick",
+      "Work ORder Issue/Pick"
+    ],
+    "Other": [],
+    "Stand Alone": []
+  },
+  "erp_packages": {
+    "SAP 6": [
+      "PKG Route Sales"
+    ],
+    "SAP HANA / HANA 22": [],
+    "Oracle EBS": [],
+    "Oracle Fusion": [],
+    "Oracle JD Edwards E1": [
+      "PKG PO / Req Gen",
+      "PKG PO / Req Approve",
+      "PKG Route Sales",
+      "PKG Field Service"
+    ],
+    "Oracle JD Edwards World": [],
+    "Oracle Net Suite": [],
+    "Other": [],
+    "Stand Alone": []
+  },
+  "parameters": [
+    {
+      "key": "SMALL_PROJECT_IM_FACTOR",
+      "label": "Small Project IM Percentage",
+      "category": "Project Factors",
+      "value": 0.1,
+      "type": "percentage"
+    },
+    {
+      "key": "STANDARD_IM_FACTOR",
+      "label": "Standard IM Percentage",
+      "category": "Project Factors",
+      "value": 0.2,
+      "type": "percentage"
+    },
+    {
+      "key": "SMALL_PROJECT_PREP_FACTOR",
+      "label": "Small Project Prep Percentage",
+      "category": "Project Factors",
+      "value": 0.05,
+      "type": "percentage"
+    },
+    {
+      "key": "STANDARD_PREP_FACTOR",
+      "label": "Standard Prep Percentage",
+      "category": "Project Factors",
+      "value": 0.1,
+      "type": "percentage"
+    },
+    {
+      "key": "SMALL_PROJECT_CONTINGENCY",
+      "label": "Small Project Contingency",
+      "category": "Project Factors",
+      "value": 0.075,
+      "type": "percentage"
+    },
+    {
+      "key": "STANDARD_CONTINGENCY",
+      "label": "Standard Contingency",
+      "category": "Project Factors",
+      "value": 0.15,
+      "type": "percentage"
+    },
+    {
+      "key": "UNIT_TEST_FACTOR",
+      "label": "Unit Testing Percentage of Development",
+      "category": "Testing",
+      "value": 0.15,
+      "type": "percentage"
+    },
+    {
+      "key": "PROJECT_KICKOFF_NET_NEW_HOURS",
+      "label": "Project Kickoff - Net New",
+      "category": "Plan",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "PROJECT_KICKOFF_SMALL_HOURS",
+      "label": "Project Kickoff - Small Project",
+      "category": "Plan",
+      "value": 2,
+      "type": "hours"
+    },
+    {
+      "key": "PROJECT_KICKOFF_STANDARD_HOURS",
+      "label": "Project Kickoff - Standard",
+      "category": "Plan",
+      "value": 4,
+      "type": "hours"
+    },
+    {
+      "key": "HA_INSTALL_INCREMENT_HOURS",
+      "label": "High Availability Installation Increment",
+      "category": "Install",
+      "value": 6,
+      "type": "hours"
+    },
+    {
+      "key": "GATEWAY_INSTALL_HOURS",
+      "label": "Gateway Installation",
+      "category": "Install",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "BASE_APP_PACKAGE_INSTALL_HOURS",
+      "label": "Base Application Package Install",
+      "category": "Plan",
+      "value": 4,
+      "type": "hours"
+    },
+    {
+      "key": "CUSTOMER_FACILITY_REVIEW_HOURS",
+      "label": "Customer Facility Review - Net New",
+      "category": "Plan",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "ACCESS_CONFIRMATION_HOURS",
+      "label": "VPN/ERP Access Confirmation Per Required Access",
+      "category": "Plan",
+      "value": 2,
+      "type": "hours"
+    },
+    {
+      "key": "PACEJET_REQUIREMENTS_HOURS",
+      "label": "PaceJet Requirements Session",
+      "category": "Plan",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "SOLUTION_ORIENTATION_FACTOR_1",
+      "label": "Solution Orientation Preparation Factor",
+      "category": "Plan",
+      "value": 0.5,
+      "type": "percentage"
+    },
+    {
+      "key": "SOLUTION_ORIENTATION_FACTOR_2",
+      "label": "Solution Orientation Session Factor",
+      "category": "Plan",
+      "value": 0.35,
+      "type": "percentage"
+    },
+    {
+      "key": "GAP_ANALYSIS_FACTOR",
+      "label": "Gap Analysis Factor",
+      "category": "Plan",
+      "value": 0.35,
+      "type": "percentage"
+    },
+    {
+      "key": "BRD_FACTOR",
+      "label": "BRD Creation Factor of Build",
+      "category": "Plan",
+      "value": 0.15,
+      "type": "percentage"
+    },
+    {
+      "key": "CUSTOMER_TEST_SCRIPT_FACTOR",
+      "label": "Customer Test Script Approval Factor",
+      "category": "Design",
+      "value": 0.25,
+      "type": "percentage"
+    },
+    {
+      "key": "CI_TEST_SCRIPT_FACTOR",
+      "label": "CI Test Script Creation Factor",
+      "category": "Design",
+      "value": 0.05,
+      "type": "percentage"
+    },
+    {
+      "key": "INTERNAL_DESIGN_REVIEW_HOURS",
+      "label": "Internal Solution Design Review",
+      "category": "Design",
+      "value": 4,
+      "type": "hours"
+    },
+    {
+      "key": "SOLUTION_DESIGN_FACTOR",
+      "label": "Solution Design Factor",
+      "category": "Design",
+      "value": 0.2,
+      "type": "percentage"
+    },
+    {
+      "key": "APP_DEV_TRAINING_HOURS",
+      "label": "Application Developer Training",
+      "category": "Build",
+      "value": 24,
+      "type": "hours"
+    },
+    {
+      "key": "ADMIN_TRAINING_NET_NEW_HOURS",
+      "label": "Admin/User/Role Training - Net New",
+      "category": "Build",
+      "value": 2,
+      "type": "hours"
+    },
+    {
+      "key": "PACEJET_VALIDATION_HOURS",
+      "label": "PaceJet Solution Validation",
+      "category": "Build",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "APP_DEMO_HOURS_PER_APP",
+      "label": "Application Demonstration Hours Per Application",
+      "category": "Build",
+      "value": 1.5,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "APP_REMEDIATION_FACTOR",
+      "label": "Application Remediation Review Factor",
+      "category": "Build",
+      "value": 0.5,
+      "type": "percentage"
+    },
+    {
+      "key": "SOLUTION_WORKSHOP_FACTOR",
+      "label": "Solution Workshop Factor",
+      "category": "Build",
+      "value": 0.5,
+      "type": "percentage"
+    },
+    {
+      "key": "PROMOTION_VALIDATION_FACTOR",
+      "label": "Application Promotion & Stage Validation Factor",
+      "category": "Build",
+      "value": 0.025,
+      "type": "percentage"
+    },
+    {
+      "key": "END_USER_DOC_HOURS_PER_APP",
+      "label": "End User Documentation Hours Per App",
+      "category": "Test",
+      "value": 2,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "UAT_PREP_STANDARD_HOURS",
+      "label": "UAT Prep Standard Hours",
+      "category": "Test",
+      "value": 2,
+      "type": "hours"
+    },
+    {
+      "key": "LOAD_TEST_FACTOR",
+      "label": "Go-Live Readiness Assessment Factor",
+      "category": "Test",
+      "value": 0.2,
+      "type": "percentage"
+    },
+    {
+      "key": "GO_LIVE_PREP_VALIDATION_FACTOR",
+      "label": "Go-Live Prep & Production Validation Factor",
+      "category": "Test",
+      "value": 0.5,
+      "type": "percentage"
+    },
+    {
+      "key": "GO_LIVE_PREP_FACTOR",
+      "label": "Go-Live Prep Meeting Factor",
+      "category": "Go Live",
+      "value": 0.025,
+      "type": "percentage"
+    },
+    {
+      "key": "GO_LIVE_REMOTE_BASE_HOURS",
+      "label": "Remote Go-Live Base Hours",
+      "category": "Go Live",
+      "value": 32,
+      "type": "hours"
+    },
+    {
+      "key": "GO_LIVE_REMOTE_EXTRA_SITE_HOURS",
+      "label": "Remote Go-Live Extra Site Hours",
+      "category": "Go Live",
+      "value": 16,
+      "type": "hours"
+    },
+    {
+      "key": "GO_LIVE_ONSITE_BASE_HOURS",
+      "label": "On-Site Go-Live Base Hours",
+      "category": "Go Live",
+      "value": 40,
+      "type": "hours"
+    },
+    {
+      "key": "GO_LIVE_ONSITE_EXTRA_SITE_HOURS",
+      "label": "On-Site Go-Live Extra Site Hours",
+      "category": "Go Live",
+      "value": 24,
+      "type": "hours"
+    },
+    {
+      "key": "GO_LIVE_HYBRID_EXTRA_SITE_HOURS",
+      "label": "Hybrid Go-Live Extra Site Hours",
+      "category": "Go Live",
+      "value": 16,
+      "type": "hours"
+    },
+    {
+      "key": "ESTIMATE_DURATION_HOURS_PER_MONTH",
+      "label": "Estimate Duration Hours Per Month",
+      "category": "Summary",
+      "value": 160,
+      "type": "hours"
+    },
+    {
+      "key": "ESTIMATE_DURATION_UTILIZATION",
+      "label": "Estimate Duration Utilization Factor",
+      "category": "Summary",
+      "value": 0.75,
+      "type": "percentage"
+    },
+    {
+      "key": "LOW_RANGE_FACTOR",
+      "label": "Estimate Low Range Factor",
+      "category": "Summary",
+      "value": 0.0,
+      "type": "percentage"
+    },
+    {
+      "key": "HIGH_RANGE_FACTOR",
+      "label": "Estimate High Range Factor",
+      "category": "Summary",
+      "value": 0.15,
+      "type": "percentage"
+    },
+    {
+      "key": "EPP_CLOUD_INSTALL_HOURS",
+      "label": "EPP Cloud Installation",
+      "category": "EPP",
+      "value": 6,
+      "type": "hours"
+    },
+    {
+      "key": "EPP_ON_PREM_INSTALL_HOURS",
+      "label": "EPP On Prem Installation",
+      "category": "EPP",
+      "value": 6,
+      "type": "hours"
+    },
+    {
+      "key": "PRINT_BRIDGE_INSTALL_HOURS",
+      "label": "Print Bridge Installation Per Additional Site",
+      "category": "EPP",
+      "value": 3,
+      "type": "hours"
+    },
+    {
+      "key": "EPP_FILE_DROP_HOURS",
+      "label": "EPP File Drop Integration",
+      "category": "EPP",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "EPP_WEB_SERVICE_HOURS",
+      "label": "EPP Web Service Integration",
+      "category": "EPP",
+      "value": 16,
+      "type": "hours"
+    },
+    {
+      "key": "LABEL_BASE_HOURS",
+      "label": "Label Development Base Hours Per Label",
+      "category": "Development",
+      "value": 2,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "IOT_SERVICE_DEF_HOURS",
+      "label": "IoT Service Definition Base Hours",
+      "category": "Development",
+      "value": 16,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "ERP_SERVICE_DEF_HOURS",
+      "label": "ERP Service Definition Base Hours",
+      "category": "Development",
+      "value": 16,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "DATA_REP_SESSION_HOURS",
+      "label": "Data Replication Session Base Hours",
+      "category": "Development",
+      "value": 16,
+      "type": "hours_per_item"
+    },
+    {
+      "key": "UPGRADE_FIXED_DEV_HOURS",
+      "label": "Upgrade Fixed Development Hours",
+      "category": "Upgrade",
+      "value": 8,
+      "type": "hours"
+    },
+    {
+      "key": "UPGRADE_ANDROID_FACTOR",
+      "label": "Android Upgrade Additional Factor",
+      "category": "Upgrade",
+      "value": 1.5,
+      "type": "multiplier"
+    }
+  ],
+  "security": [
+    {
+      "label": "None",
+      "hours": 0
+    },
+    {
+      "label": "LDAP",
+      "hours": 8
+    },
+    {
+      "label": "OKTA",
+      "hours": 32
+    },
+    {
+      "label": "SAML",
+      "hours": 40
+    }
+  ],
+  "epp_integration_effort": [
+    {
+      "label": "None",
+      "hours": 0
+    },
+    {
+      "label": "File Drop",
+      "hours": 8
+    },
+    {
+      "label": "Web Service",
+      "hours": 16
+    }
+  ],
+  "upgrade_types": [
+    {
+      "label": "",
+      "factor": 0
+    },
+    {
+      "label": "From 4/5 to 9.x",
+      "factor": 8
+    },
+    {
+      "label": "From 7.8 to 9.x",
+      "factor": 3
+    },
+    {
+      "label": "From 7.9 to 9.x",
+      "factor": 2
+    },
+    {
+      "label": "From 8.x to 9.x",
+      "factor": 1
+    },
+    {
+      "label": "From 9.0 to 9.x",
+      "factor": 1
+    },
+    {
+      "label": "From 9.5+ to Current",
+      "factor": 0.2
+    },
+    {
+      "label": "From 9.x to Cloud",
+      "factor": 1
+    },
+    {
+      "label": "Patch / Hot Patch",
+      "factor": 0.25
+    }
+  ],
+  "uat_site_multipliers": [
+    {
+      "sites": 1,
+      "multiplier": 1
+    },
+    {
+      "sites": 2,
+      "multiplier": 1.75
+    },
+    {
+      "sites": 3,
+      "multiplier": 2.25
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}MEP Estimate{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Cloud Inventory <span>MEP Estimate</span></div>
+  {% if user %}
+  <nav class="global-nav">
+    <a href="/estimates">Estimates</a><a href="/data">Calculation Data</a>
+    {% if user.role == 'ADMIN' %}<a href="/admin/users">Users</a>{% endif %}
+  </nav>
+  <div class="userbox"><b>{{ user.username }}</b><span>{{ user.role }}</span><form method="post" action="/logout"><button class="link-button">Sign out</button></form></div>
+  {% endif %}
+</header>
+{% if rev %}
+<div class="estimate-head">
+  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="muted">Revision {{ rev.revision_no }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
+  <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
+</div>
+<nav class="tabs">
+  <a class="{% if active_tab=='estimate' %}active{% endif %}" href="/estimate/{{rev.id}}">Estimate</a>
+  <a class="{% if active_tab=='detail' %}active{% endif %}" href="/estimate/{{rev.id}}/detail">Estimate Detail</a>
+  <a class="{% if active_tab=='calculations' %}active{% endif %}" href="/estimate/{{rev.id}}/calculations">Calculations</a>
+  <a class="{% if active_tab=='schedule' %}active{% endif %}" href="/estimate/{{rev.id}}/schedule">Schedule</a>
+  <a class="{% if active_tab=='audit' %}active{% endif %}" href="/estimate/{{rev.id}}/audit">Audit</a>
+</nav>
+{% endif %}
+<main class="page {% block pageclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+<script>
+function filterTable(inputId, tableId){const q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none');}
+function toggleTrace(id){document.getElementById(id).classList.toggle('hidden');}
+</script>
+{% block scripts %}{% endblock %}
+</body></html>

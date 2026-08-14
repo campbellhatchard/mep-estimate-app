@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% set active_tab='detail' %}{% block title %}Estimate Detail {{estimate.estimate_number}}{% endblock %}{% block pageclass %}sheet-page{% endblock %}
+{% block content %}
+<div class="actionbar"><div><h1 class="compact-title">Development Detail</h1></div><div class="action-group">{% if not readonly %}<button form="detailForm" class="primary">Save Detail</button>{% endif %}</div></div>
+<form id="detailForm" method="post">
+<div class="detail-factor">
+ <label>Unit Testing Factor <span class="help" title="Default from the pinned configuration version. Enter a value only when this estimate requires an authorized override.">?</span>
+ <div class="factor-row"><span class="default-chip">Default {{'%.0f%%'|format(default_factor*100)}}</span><input name="unit_test_factor_override" type="number" min="0" max="1" step="0.01" placeholder="No override" value="{{rev.unit_test_factor_override if rev.unit_test_factor_override is not none else ''}}" {% if readonly %}disabled{% endif %}><input name="unit_test_override_reason" placeholder="Override reason required when changed" value="{{rev.unit_test_override_reason or ''}}" {% if readonly %}disabled{% endif %}></div></label>
+</div>
+{% set ns=namespace(i=0) %}
+{% for section,lines,s in sections %}
+<div class="detail-section card">
+ <div class="detail-section-title">{{section}}</div>
+ <div class="table-wrap"><table class="detail-table"><thead><tr><th>Ref</th><th>Definition</th><th>Base Hours</th><th>Mod Hours</th><th>Dev Subtotal</th><th>Unit Testing</th><th>Notes</th><th>Total</th><th>Validation</th></tr></thead><tbody>
+ {% for line in lines %}
+ <tr class="{% if line.total==0 %}zero-row{% endif %}">
+  <td>{{line.ref}}</td>
+  <td>{% if section in ['Labels','IoT Service Definitions','ERP Service Definitions','Data Replication Sessions'] %}<input name="description_{{ns.i}}" value="{{line.definition}}" placeholder="Description required" {% if readonly %}disabled{% endif %}>{% else %}<input name="description_{{ns.i}}" value="{{line.definition}}" readonly class="readonly-cell">{% endif %}</td>
+  <td class="num calculated">{{'%.1f'|format(line.base_hours)}}</td>
+  <td><input class="num adjust-input" type="number" step="0.5" name="mod_{{ns.i}}" value="{{line.mod_hours}}" {% if readonly %}disabled{% endif %}></td>
+  <td class="num calculated">{{'%.1f'|format(line.dev_subtotal)}}</td><td class="num calculated">{{'%.1f'|format(line.unit_testing)}}</td>
+  <td><input name="notes_{{ns.i}}" value="{{line.notes}}" placeholder="Required for non-zero adjustment" {% if readonly %}disabled{% endif %}></td><td class="num total-cell">{{'%.1f'|format(line.total)}}</td><td class="validation">{{line.error}}</td>
+  <input type="hidden" name="line_key_{{ns.i}}" value="{{line.key}}">
+ </tr>{% set ns.i=ns.i+1 %}{% endfor %}
+ <tr class="summary-row"><td></td><td><b>Section Total{% if s.count is defined %} ({{s.count}} configured){% endif %}</b></td><td>{{'%.1f'|format(s.base or 0)}}</td><td>{{'%.1f'|format(s.mod or 0)}}</td><td>{{'%.1f'|format(s.dev or 0)}}</td><td>{{'%.1f'|format(s.unit or 0)}}</td><td></td><td>{{'%.1f'|format(s.total or 0)}}</td><td></td></tr>
+ </tbody></table></div>
+</div>
+{% endfor %}
+<input type="hidden" name="line_count" value="{{ns.i}}">
+</form>
+{% endblock %}

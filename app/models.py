@@ -1,0 +1,201 @@
+from __future__ import annotations
+from datetime import datetime, date
+from typing import Optional
+from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignKey, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .database import Base
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    username_normalized: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(300))
+    role: Mapped[str] = mapped_column(String(30), default="ESTIMATOR")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class ConfigurationVersion(Base):
+    __tablename__ = "configuration_versions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT")
+    change_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    submitted_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    reviewed_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    approved_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    approval_status: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+class ConfigItem(Base):
+    __tablename__ = "config_items"
+    __table_args__ = (UniqueConstraint("config_version_id", "category", "key", name="uq_config_item_version_category_key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    config_version_id: Mapped[int] = mapped_column(ForeignKey("configuration_versions.id"), index=True)
+    category: Mapped[str] = mapped_column(String(80), index=True)
+    key: Mapped[str] = mapped_column(String(120), index=True)
+    label: Mapped[str] = mapped_column(String(240))
+    value_number: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    value_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    value_type: Mapped[str] = mapped_column(String(30), default="text")
+    unit: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    parent_key: Mapped[Optional[str]] = mapped_column(String(120), nullable=True, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    modified_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Estimate(Base):
+    __tablename__ = "estimates"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    estimate_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    revisions: Mapped[list["EstimateRevision"]] = relationship(back_populates="estimate", cascade="all, delete-orphan")
+
+class EstimateRevision(Base):
+    __tablename__ = "estimate_revisions"
+    __table_args__ = (UniqueConstraint("estimate_id", "revision_no", name="uq_estimate_revision"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    estimate_id: Mapped[int] = mapped_column(ForeignKey("estimates.id"), index=True)
+    revision_no: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(30), default="DRAFT", index=True)
+    config_version_id: Mapped[int] = mapped_column(ForeignKey("configuration_versions.id"))
+    engine_version: Mapped[str] = mapped_column(String(20), default="1.0.0")
+    customer: Mapped[str] = mapped_column(String(200), default="")
+    customer_type: Mapped[str] = mapped_column(String(40), default="Install_Base")
+    opportunity_number: Mapped[str] = mapped_column(String(120), default="")
+    proposal_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    project_start: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    billing_rate: Mapped[float] = mapped_column(Float, default=250)
+    currency: Mapped[str] = mapped_column(String(60), default="US Dollars")
+    entity: Mapped[str] = mapped_column(String(240), default="")
+    upgrade_type: Mapped[str] = mapped_column(String(120), default="")
+    upgrade_app_count: Mapped[int] = mapped_column(Integer, default=0)
+    android_change: Mapped[bool] = mapped_column(Boolean, default=False)
+    project_type: Mapped[str] = mapped_column(String(80), default="Small Project")
+    erp: Mapped[str] = mapped_column(String(100), default="Oracle JD Edwards E1")
+    high_availability: Mapped[bool] = mapped_column(Boolean, default=False)
+    gateway: Mapped[bool] = mapped_column(Boolean, default=False)
+    epp_install: Mapped[str] = mapped_column(String(30), default="No")
+    epp_integration: Mapped[str] = mapped_column(String(50), default="None")
+    label_sites: Mapped[int] = mapped_column(Integer, default=0)
+    labels_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    label_count: Mapped[int] = mapped_column(Integer, default=0)
+    iot_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    iot_count: Mapped[int] = mapped_column(Integer, default=0)
+    erp_integration_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    erp_integration_count: Mapped[int] = mapped_column(Integer, default=0)
+    data_rep_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    data_rep_count: Mapped[int] = mapped_column(Integer, default=0)
+    consultant_access_setup: Mapped[bool] = mapped_column(Boolean, default=False)
+    onboarding: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_count: Mapped[str] = mapped_column(String(40), default="1 to 50")
+    test_cycles: Mapped[int] = mapped_column(Integer, default=1)
+    go_live_sites: Mapped[int] = mapped_column(Integer, default=0)
+    go_live_type: Mapped[str] = mapped_column(String(60), default="None")
+    uat_sites: Mapped[int] = mapped_column(Integer, default=1)
+    base_test_pct: Mapped[float] = mapped_column(Float, default=0.5)
+    pacejet: Mapped[bool] = mapped_column(Boolean, default=False)
+    write_test_scripts: Mapped[bool] = mapped_column(Boolean, default=False)
+    security_method: Mapped[str] = mapped_column(String(30), default="None")
+    end_user_documentation: Mapped[bool] = mapped_column(Boolean, default=False)
+    end_user_training: Mapped[bool] = mapped_column(Boolean, default=False)
+    app_dev_training: Mapped[bool] = mapped_column(Boolean, default=False)
+    delivery_method: Mapped[str] = mapped_column(String(40), default="Standard Project")
+    unit_test_factor_override: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    unit_test_override_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    calculated_hours: Mapped[float] = mapped_column(Float, default=0)
+    calculated_fees: Mapped[float] = mapped_column(Float, default=0)
+    low_hours: Mapped[float] = mapped_column(Float, default=0)
+    high_hours: Mapped[float] = mapped_column(Float, default=0)
+    duration_months: Mapped[float] = mapped_column(Float, default=0)
+    schedule_needs_refresh: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    row_version: Mapped[int] = mapped_column(Integer, default=1)
+    estimate: Mapped[Estimate] = relationship(back_populates="revisions")
+    applications: Mapped[list["EstimateApplication"]] = relationship(cascade="all, delete-orphan")
+    custom_apps: Mapped[list["EstimateCustomApplication"]] = relationship(cascade="all, delete-orphan")
+
+class EstimateApplication(Base):
+    __tablename__ = "estimate_applications"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="APPLICATION")
+    catalog_key: Mapped[str] = mapped_column(String(200))
+    label: Mapped[str] = mapped_column(String(240))
+    config_type: Mapped[str] = mapped_column(String(40), default="No Config")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+class EstimateCustomApplication(Base):
+    __tablename__ = "estimate_custom_applications"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
+    description: Mapped[str] = mapped_column(String(240), default="")
+    complexity: Mapped[str] = mapped_column(String(40), default="No Config")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+class DetailAdjustment(Base):
+    __tablename__ = "detail_adjustments"
+    __table_args__ = (UniqueConstraint("revision_id", "line_key", name="uq_detail_adjustment"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
+    line_key: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(String(240), default="")
+    mod_hours: Mapped[float] = mapped_column(Float, default=0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+
+class CalculationAdjustment(Base):
+    __tablename__ = "calculation_adjustments"
+    __table_args__ = (UniqueConstraint("revision_id", "line_key", name="uq_calc_adjustment"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
+    line_key: Mapped[str] = mapped_column(String(120))
+    adjust_hours: Mapped[float] = mapped_column(Float, default=0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+
+class ScheduleTask(Base):
+    __tablename__ = "schedule_tasks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
+    task_id: Mapped[str] = mapped_column(String(30))
+    phase: Mapped[str] = mapped_column(String(30))
+    task: Mapped[str] = mapped_column(String(240))
+    task_owner: Mapped[str] = mapped_column(String(100), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    purpose: Mapped[str] = mapped_column(Text, default="")
+    resource_assigned: Mapped[str] = mapped_column(String(120), default="")
+    status: Mapped[str] = mapped_column(String(40), default="Planned")
+    percent_complete: Mapped[int] = mapped_column(Integer, default=0)
+    non_bill_hours: Mapped[float] = mapped_column(Float, default=0)
+    billable_hours_budgeted: Mapped[float] = mapped_column(Float, default=0)
+    change_order_hours: Mapped[float] = mapped_column(Float, default=0)
+    hours_used: Mapped[float] = mapped_column(Float, default=0)
+    comments: Mapped[str] = mapped_column(Text, default="")
+    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    estimate_id: Mapped[Optional[int]] = mapped_column(ForeignKey("estimates.id"), nullable=True, index=True)
+    revision_id: Mapped[Optional[int]] = mapped_column(ForeignKey("estimate_revisions.id"), nullable=True, index=True)
+    config_version_id: Mapped[Optional[int]] = mapped_column(ForeignKey("configuration_versions.id"), nullable=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(60), index=True)
+    field_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    source: Mapped[str] = mapped_column(String(30), default="WEB")

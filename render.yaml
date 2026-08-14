@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: mep-estimate-app
+    runtime: python
+    plan: starter
+    region: ohio
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mep-estimate-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+databases:
+  - name: mep-estimate-db
+    plan: basic-256mb
+    region: ohio
+    postgresMajorVersion: "18"

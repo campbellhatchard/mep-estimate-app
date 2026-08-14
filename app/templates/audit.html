@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Audit — {{ estimate.estimate_number }}{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row"><div><h1>Estimate Audit</h1><div class="subtle">Estimate {{ estimate.estimate_number }} Rev {{ rev.revision_no }} · Immutable change history</div></div><a class="button secondary" href="/estimate/{{ rev.id }}">Back to Estimate</a></div>
+  <div class="data-table-wrap"><table class="data-table audit-table"><thead><tr><th>Date/Time</th><th>User</th><th>Event</th><th>Field</th><th>Previous</th><th>New</th><th>Reason</th></tr></thead><tbody>
+  {% for e in events %}<tr><td>{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ users.get(e.user_id,'System') }}</td><td><code>{{ e.event_type }}</code></td><td>{{ e.field_name or '' }}</td><td>{{ e.old_value or '' }}</td><td>{{ e.new_value or '' }}</td><td>{{ e.reason or '' }}</td></tr>{% else %}<tr><td colspan="7" class="empty">No audit events.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

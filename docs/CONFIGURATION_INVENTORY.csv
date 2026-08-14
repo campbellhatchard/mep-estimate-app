@@ -1,0 +1,237 @@
+Category,Internal Key,Display Label,Initial Value,Value Type,Scope
+Project Factors,SMALL_PROJECT_IM_FACTOR,Small Project IM Percentage,0.1,percentage,Global
+Project Factors,STANDARD_IM_FACTOR,Standard IM Percentage,0.2,percentage,Global
+Project Factors,SMALL_PROJECT_PREP_FACTOR,Small Project Prep Percentage,0.05,percentage,Global
+Project Factors,STANDARD_PREP_FACTOR,Standard Prep Percentage,0.1,percentage,Global
+Project Factors,SMALL_PROJECT_CONTINGENCY,Small Project Contingency,0.075,percentage,Global
+Project Factors,STANDARD_CONTINGENCY,Standard Contingency,0.15,percentage,Global
+Testing,UNIT_TEST_FACTOR,Unit Testing Percentage of Development,0.15,percentage,Global
+Plan,PROJECT_KICKOFF_NET_NEW_HOURS,Project Kickoff - Net New,8,hours,Global
+Plan,PROJECT_KICKOFF_SMALL_HOURS,Project Kickoff - Small Project,2,hours,Global
+Plan,PROJECT_KICKOFF_STANDARD_HOURS,Project Kickoff - Standard,4,hours,Global
+Install,HA_INSTALL_INCREMENT_HOURS,High Availability Installation Increment,6,hours,Global
+Install,GATEWAY_INSTALL_HOURS,Gateway Installation,8,hours,Global
+Plan,BASE_APP_PACKAGE_INSTALL_HOURS,Base Application Package Install,4,hours,Global
+Plan,CUSTOMER_FACILITY_REVIEW_HOURS,Customer Facility Review - Net New,8,hours,Global
+Plan,ACCESS_CONFIRMATION_HOURS,VPN/ERP Access Confirmation Per Required Access,2,hours,Global
+Plan,PACEJET_REQUIREMENTS_HOURS,PaceJet Requirements Session,8,hours,Global
+Plan,SOLUTION_ORIENTATION_FACTOR_1,Solution Orientation Preparation Factor,0.5,percentage,Global
+Plan,SOLUTION_ORIENTATION_FACTOR_2,Solution Orientation Session Factor,0.35,percentage,Global
+Plan,GAP_ANALYSIS_FACTOR,Gap Analysis Factor,0.35,percentage,Global
+Plan,BRD_FACTOR,BRD Creation Factor of Build,0.15,percentage,Global
+Design,CUSTOMER_TEST_SCRIPT_FACTOR,Customer Test Script Approval Factor,0.25,percentage,Global
+Design,CI_TEST_SCRIPT_FACTOR,CI Test Script Creation Factor,0.05,percentage,Global
+Design,INTERNAL_DESIGN_REVIEW_HOURS,Internal Solution Design Review,4,hours,Global
+Design,SOLUTION_DESIGN_FACTOR,Solution Design Factor,0.2,percentage,Global
+Build,APP_DEV_TRAINING_HOURS,Application Developer Training,24,hours,Global
+Build,ADMIN_TRAINING_NET_NEW_HOURS,Admin/User/Role Training - Net New,2,hours,Global
+Build,PACEJET_VALIDATION_HOURS,PaceJet Solution Validation,8,hours,Global
+Build,APP_DEMO_HOURS_PER_APP,Application Demonstration Hours Per Application,1.5,hours_per_item,Global
+Build,APP_REMEDIATION_FACTOR,Application Remediation Review Factor,0.5,percentage,Global
+Build,SOLUTION_WORKSHOP_FACTOR,Solution Workshop Factor,0.5,percentage,Global
+Build,PROMOTION_VALIDATION_FACTOR,Application Promotion & Stage Validation Factor,0.025,percentage,Global
+Test,END_USER_DOC_HOURS_PER_APP,End User Documentation Hours Per App,2,hours_per_item,Global
+Test,UAT_PREP_STANDARD_HOURS,UAT Prep Standard Hours,2,hours,Global
+Test,LOAD_TEST_FACTOR,Go-Live Readiness Assessment Factor,0.2,percentage,Global
+Test,GO_LIVE_PREP_VALIDATION_FACTOR,Go-Live Prep & Production Validation Factor,0.5,percentage,Global
+Go Live,GO_LIVE_PREP_FACTOR,Go-Live Prep Meeting Factor,0.025,percentage,Global
+Go Live,GO_LIVE_REMOTE_BASE_HOURS,Remote Go-Live Base Hours,32,hours,Global
+Go Live,GO_LIVE_REMOTE_EXTRA_SITE_HOURS,Remote Go-Live Extra Site Hours,16,hours,Global
+Go Live,GO_LIVE_ONSITE_BASE_HOURS,On-Site Go-Live Base Hours,40,hours,Global
+Go Live,GO_LIVE_ONSITE_EXTRA_SITE_HOURS,On-Site Go-Live Extra Site Hours,24,hours,Global
+Go Live,GO_LIVE_HYBRID_EXTRA_SITE_HOURS,Hybrid Go-Live Extra Site Hours,16,hours,Global
+Summary,ESTIMATE_DURATION_HOURS_PER_MONTH,Estimate Duration Hours Per Month,160,hours,Global
+Summary,ESTIMATE_DURATION_UTILIZATION,Estimate Duration Utilization Factor,0.75,percentage,Global
+Summary,LOW_RANGE_FACTOR,Estimate Low Range Factor,0.0,percentage,Global
+Summary,HIGH_RANGE_FACTOR,Estimate High Range Factor,0.15,percentage,Global
+EPP,EPP_CLOUD_INSTALL_HOURS,EPP Cloud Installation,6,hours,Global
+EPP,EPP_ON_PREM_INSTALL_HOURS,EPP On Prem Installation,6,hours,Global
+EPP,PRINT_BRIDGE_INSTALL_HOURS,Print Bridge Installation Per Additional Site,3,hours,Global
+EPP,EPP_FILE_DROP_HOURS,EPP File Drop Integration,8,hours,Global
+EPP,EPP_WEB_SERVICE_HOURS,EPP Web Service Integration,16,hours,Global
+Development,LABEL_BASE_HOURS,Label Development Base Hours Per Label,2,hours_per_item,Global
+Development,IOT_SERVICE_DEF_HOURS,IoT Service Definition Base Hours,16,hours_per_item,Global
+Development,ERP_SERVICE_DEF_HOURS,ERP Service Definition Base Hours,16,hours_per_item,Global
+Development,DATA_REP_SESSION_HOURS,Data Replication Session Base Hours,16,hours_per_item,Global
+Upgrade,UPGRADE_FIXED_DEV_HOURS,Upgrade Fixed Development Hours,8,hours,Global
+Upgrade,UPGRADE_ANDROID_FACTOR,Android Upgrade Additional Factor,1.5,multiplier,Global
+ERP,SAP_6,SAP 6,12,hours,Global
+ERP,SAP_HANA_HANA_22,SAP HANA / HANA 22,12,hours,Global
+ERP,ORACLE_EBS,Oracle EBS,12,hours,Global
+ERP,ORACLE_FUSION,Oracle Fusion,30,hours,Global
+ERP,ORACLE_JD_EDWARDS_E1,Oracle JD Edwards E1,12,hours,Global
+ERP,ORACLE_JD_EDWARDS_WORLD,Oracle JD Edwards World,12,hours,Global
+ERP,ORACLE_NET_SUITE,Oracle Net Suite,20,hours,Global
+ERP,OTHER,Other,0,hours,Global
+ERP,STAND_ALONE,Stand Alone,10,hours,Global
+Solution Type,EPP_CLOUD,EPP Cloud,"{""load_test_effort"": 0, ""adw_hours"": 8, ""on_prem_hours"": 0, ""cloud_flag"": 8, ""ha_valid"": false, ""gateway_valid"": false}",json,Global
+Solution Type,EPP_ON_PREM,EPP On Prem,"{""load_test_effort"": 0, ""adw_hours"": 8, ""on_prem_hours"": 8, ""cloud_flag"": 0, ""ha_valid"": false, ""gateway_valid"": false}",json,Global
+Solution Type,MEP_CLOUD,MEP Cloud,"{""load_test_effort"": 8, ""adw_hours"": 8, ""on_prem_hours"": 0, ""cloud_flag"": 1, ""ha_valid"": false, ""gateway_valid"": true}",json,Global
+Solution Type,MEP_ON_PREM,MEP On Prem,"{""load_test_effort"": 12, ""adw_hours"": 8, ""on_prem_hours"": 16, ""cloud_flag"": 0, ""ha_valid"": true, ""gateway_valid"": false}",json,Global
+Solution Type,PLATFORM_MOVE_ON_PREM,Platform Move On Prem,"{""load_test_effort"": 8, ""adw_hours"": 8, ""on_prem_hours"": 16, ""cloud_flag"": 0, ""ha_valid"": true, ""gateway_valid"": false}",json,Global
+Solution Type,PLATFORM_MOVE_TO_CLOUD,Platform Move To Cloud,"{""load_test_effort"": 8, ""adw_hours"": 8, ""on_prem_hours"": 0, ""cloud_flag"": 1, ""ha_valid"": false, ""gateway_valid"": true}",json,Global
+Solution Type,SMALL_PROJECT,Small Project,"{""load_test_effort"": 0, ""adw_hours"": 0, ""on_prem_hours"": 0, ""cloud_flag"": 0, ""ha_valid"": false, ""gateway_valid"": false}",json,Global
+User Count,USER_1,1 to 50,"{""multiplier"": 1, ""handheld_setup_hours"": 4, ""printer_setup_hours"": 4}",json,Global
+User Count,USER_2,51 to 100,"{""multiplier"": 2, ""handheld_setup_hours"": 8, ""printer_setup_hours"": 8}",json,Global
+User Count,USER_3,101 to 250,"{""multiplier"": 3, ""handheld_setup_hours"": 8, ""printer_setup_hours"": 16}",json,Global
+User Count,USER_4,250 to 500,"{""multiplier"": 4, ""handheld_setup_hours"": 8, ""printer_setup_hours"": 16}",json,Global
+User Count,USER_5,501 to 1000,"{""multiplier"": 5, ""handheld_setup_hours"": 16, ""printer_setup_hours"": 32}",json,Global
+User Count,USER_6,Over 1000,"{""multiplier"": 6, ""handheld_setup_hours"": 16, ""printer_setup_hours"": 40}",json,Global
+Application Effort,NO_CONFIG,No Config,0,hours,Global
+Application Effort,BASELINE,Baseline,1,hours,Global
+Application Effort,BASELINE_4,Baseline_4,4,hours,Global
+Application Effort,MOD_REQUIRED,Mod Required,16,hours,Global
+Custom Effort,NO_CONFIG,No Config,0,hours,Global
+Custom Effort,SIMPLE,Simple,8,hours,Global
+Custom Effort,MODERATE,Moderate,16,hours,Global
+Custom Effort,COMPLEX,Complex,32,hours,Global
+Custom Effort,VERY_COMPLEX,Very Complex,80,hours,Global
+Package Effort,NO_CONFIG,No Config,0,hours,Global
+Package Effort,PKG16,PKG16,24,hours,Global
+Package Effort,PKG32,PKG32,64,hours,Global
+ERP Application,SAP_6__APP_01,Cycle Count,,catalog,SAP 6
+ERP Application,SAP_6__APP_02,Goods Issue to Cost Cent,,catalog,SAP 6
+ERP Application,SAP_6__APP_03,Goods Issue To Plant Maint,,catalog,SAP 6
+ERP Application,SAP_6__APP_04,Goods Issue To Production,,catalog,SAP 6
+ERP Application,SAP_6__APP_05,Goods Issue To Scrap,,catalog,SAP 6
+ERP Application,SAP_6__APP_06,Goors Receipt to Production,,catalog,SAP 6
+ERP Application,SAP_6__APP_07,Inventory Iquiry,,catalog,SAP 6
+ERP Application,SAP_6__APP_08,Plant To Plant Transfer,,catalog,SAP 6
+ERP Application,SAP_6__APP_09,Purchase ORder Receipt,,catalog,SAP 6
+ERP Application,SAP_6__APP_10,SLOC to SLOC Transfer,,catalog,SAP 6
+ERP Application,SAP_6__APP_11,Stock Transfer,,catalog,SAP 6
+ERP Application,SAP_6__APP_12,Qual/block Unrestricted Xfer,,catalog,SAP 6
+ERP Application,SAP_HANA_HANA_22__APP_01,Cycle Count,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_02,Goods Issue to Cost Cent,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_03,Goods Issue To Plant Maint,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_04,Goods Issue To Production,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_05,Goods Issue To Scrap,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_06,Goors Receipt to Production,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_07,Inventory Iquiry,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_08,Plant To Plant Transfer,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_09,Purchase ORder Receipt,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_10,SLOC to SLOC Transfer,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_11,Stock Transfer,,catalog,SAP HANA / HANA 22
+ERP Application,SAP_HANA_HANA_22__APP_12,Qual/block Unrestricted Xfer,,catalog,SAP HANA / HANA 22
+ERP Application,ORACLE_EBS__APP_01,Account Alias Issue,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_02,Account Alias Receipt,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_03,Move Order Pick,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_04,Putaway,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_05,WO Completion,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_06,Work Order Pick,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_07,WO Issue,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_08,Cycle Count,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_09,Inventory Inquiry,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_10,Misc Issue,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_11,Misc Receipt,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_12,Receiving,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_13,Ship Confirmation,,catalog,Oracle EBS
+ERP Application,ORACLE_EBS__APP_14,Subinventory Transfer,,catalog,Oracle EBS
+ERP Application,ORACLE_FUSION__APP_01,Account Aliasis Isue,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_02,Account Alias Receipt,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_03,Correct Receipt,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_04,Create Transfer Order,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_05,Create Work Order,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_06,Cycle Count,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_07,Interorg Transfer,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_08,Inventory Inquiry,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_09,Lot Inquiry,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_10,Miscelanious Issue,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_11,Miscelanious Receipt,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_12,Miscelanious Transaction,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_13,Orderless Completions,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_14,Orderless Returns,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_15,Physical Inventory,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_16,Pick Slip Confirmation,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_17,Project Alias Issue,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_18,Project Alian Receipt,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_19,Project Miscellaneous Issue,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_20,Project Mover Order Return,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_21,Putaway,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_22,Receipt Inspection,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_23,Receiving,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_24,Reeturn Receipt,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_25,Review Completed Transaction,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_26,Ship Confirm,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_27,Sub Inventory Transfer,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_28,WO Process Mfg Completion,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_29,WO Completions,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_30,WO Issue,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_31,WO Resource Reporting,,catalog,Oracle Fusion
+ERP Application,ORACLE_FUSION__APP_32,Upload Offline Data,,catalog,Oracle Fusion
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_01,Cycle Count Directed,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_02,Cycle Count - Non Directed Inventory Transfer,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_03,Inv Transfer Label Option,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_04,Inventory Inquiry,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_05,Invenotry Issue,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_06,Inventory Reclassification,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_07,Inventory Adjustment Negative,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_08,inventory Adjustment Positive,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_09,Lot Status Update,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_10,Pack Confirmation,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_11,Pick Confirmation,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_12,P O Receipt Label Option,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_13,Receipt Routing,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_14,RMA Returns,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_15,Ship Confirmation,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_16,Warehouse Confirmation,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_17,Work Order Issues,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_18,W O Comp Label Option,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_19,Inventory Cart Transfer,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_20,Work Order Tiem Entry,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_21,Work Order Parts Inquiry,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_22,Work Order Reversal,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_23,Kanban Checkin,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_24,Kanban Check Out,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_25,Fixed Asset Transfer,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_26,Fixed Aset Inquiry,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_27,Fixed Asset Create Asset,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_28,Fixed Asset Disposal,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_29,Fixed Asset Count,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_E1__APP_30,Fixed Asset Change Owner,,catalog,Oracle JD Edwards E1
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_01,Cycle Count Directed,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_02,Cycle Count Non Directed,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_03,Inventory Transfer,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_04,Inventory Inquiry,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_05,Inventory Issue,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_06,Inventory Recalss,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_07,Inventory Adjust POS,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_08,Inventory Adjust NEG,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_09,Lot Status Update,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_10,Pack Confirmation,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_11,Pick Conifirmation,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_12,Purchase Order Receipt,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_13,Receipt Routing,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_14,RMA Returns,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_15,Ship Confirmation,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_16,Warehouse Confirmation,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_17,Work Order Issues,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_18,Work Order Completions,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_19,Inv Cart Transfer Label,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_JD_EDWARDS_WORLD__APP_20,Inv Cart Transfer,,catalog,Oracle JD Edwards World
+ERP Application,ORACLE_NET_SUITE__APP_01,AsjuInventory Adjustment NEGstment Negative,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_02,Inventory Adjustment POS,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_03,Bin Putaway Transfer,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_04,Bin Putaway,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_05,Bin Transfer,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_06,Inventory Count Entry,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_07,Inventlory Inquiry,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_08,Location Transfer,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_09,LPN Maintenance,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_10,Order Pack,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_11,Pack and Ship,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_12,Pick Confirmation,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_13,Purchase Order Receipt,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_14,RMA Receipt,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_15,Ship Confirmation,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_16,TO Receipt,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_17,Wave Pick,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_18,WO Assembly Build,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_19,WO Completion,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_20,WO Issue Pick,,catalog,Oracle Net Suite
+ERP Application,ORACLE_NET_SUITE__APP_21,Work ORder Issue/Pick,,catalog,Oracle Net Suite
+ERP Package,SAP_6__PKG_01,PKG Route Sales,,catalog,SAP 6
+ERP Package,ORACLE_JD_EDWARDS_E1__PKG_01,PKG PO / Req Gen,,catalog,Oracle JD Edwards E1
+ERP Package,ORACLE_JD_EDWARDS_E1__PKG_02,PKG PO / Req Approve,,catalog,Oracle JD Edwards E1
+ERP Package,ORACLE_JD_EDWARDS_E1__PKG_03,PKG Route Sales,,catalog,Oracle JD Edwards E1
+ERP Package,ORACLE_JD_EDWARDS_E1__PKG_04,PKG Field Service,,catalog,Oracle JD Edwards E1

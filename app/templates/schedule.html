@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active_tab='schedule' %}
+{% block title %}Schedule — {{ estimate.estimate_number }}{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell">
+  <div class="page-title-row">
+    <div><h1>Schedule</h1><div class="subtle">{{ rev.customer or 'Customer not entered' }} · Estimate {{ estimate.estimate_number }} Rev {{ rev.revision_no }} · Generated from estimate</div></div>
+    <div class="action-row">
+      {% if rev.status == 'DRAFT' %}<form method="post" action="/estimate/{{ rev.id }}/schedule" onsubmit="return confirm('Regenerate the schedule from the current estimate? Existing manual schedule edits will be replaced.');"><input type="hidden" name="action" value="regenerate"><button class="button secondary">Regenerate Schedule</button></form>{% endif %}
+      <a class="button secondary" href="/estimate/{{ rev.id }}/jira.csv">Export Jira CSV</a>
+    </div>
+  </div>
+
+  <div class="workbook-bar">Project Schedule</div>
+  <div class="schedule-note {% if rev.schedule_needs_refresh %}stale-warning{% endif %}">{% if rev.schedule_needs_refresh %}<strong>Schedule Requires Refresh.</strong> The estimate has changed since this schedule was generated. {% endif %}Budget hours are generated from the estimate. Resource, status, completion, change order hours, hours used, comments, and dates are editable while the revision is Draft.</div>
+  <form method="post" action="/estimate/{{ rev.id }}/schedule">
+    <div class="schedule-scroll">
+      <table class="schedule-grid">
+        <thead>
+          <tr>
+            <th class="sticky-col c1">Task ID</th><th class="sticky-col c2">Task</th><th>Task Owner</th><th>Task Description</th><th>Task Purpose / Goal</th>
+            <th>Resource Assigned</th><th>Status</th><th>% Complete</th><th>Non Bill Hours</th><th>Billable Hours Budgeted</th><th>Change Order Hours</th><th>Hours Used</th><th>Billable Hours Remaining</th><th>Budget Trend</th><th>Estimate at Completion</th><th>Comments</th><th>Start</th><th>End</th>
+            {% for d in days %}<th class="date-head">{{ d.strftime('%b') }}<br>{{ d.day }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in tasks %}
+          {% set m = metrics[t.id] %}
+          {% set remaining = m.remaining %}
+          {% set eac = m.eac %}
+          <tr class="{% if t.task == t.phase %}phase-row{% elif t.task == 'Not Included' %}not-included{% endif %}">
+            <td class="sticky-col c1">{{ t.task_id }}</td>
+            <td class="sticky-col c2 task-name">{{ t.task }}</td>
+            <td>{{ t.task_owner }}</td>
+            <td class="text-cell">{{ t.description }}</td>
+            <td class="text-cell">{{ t.purpose }}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input name="resource_{{ t.id }}" value="{{ t.resource_assigned }}">{% else %}{{ t.resource_assigned }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<select name="status_{{ t.id }}">{% for s in statuses %}<option {% if s==t.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>{% else %}{{ t.status }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" min="0" max="100" name="pct_{{ t.id }}" value="{{ t.percent_complete }}">{% else %}{{ '%.0f'|format(m.percent*100) }}%{% endif %}</td>
+            <td class="num">{{ '%.1f'|format(m.non_bill) }}</td>
+            <td class="num calc-cell">{{ '%.1f'|format(m.budget) }}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" name="co_{{ t.id }}" value="{{ t.change_order_hours }}">{% else %}{{ '%.1f'|format(m.co) }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" min="0" name="used_{{ t.id }}" value="{{ t.hours_used }}">{% else %}{{ '%.1f'|format(m.used) }}{% endif %}</td>
+            <td class="num calc-cell {% if remaining < 0 %}negative{% endif %}">{{ '%.1f'|format(remaining) }}</td>
+            <td class="calc-cell"><span class="trend {% if remaining < 0 %}bad{% else %}good{% endif %}">{{ m.trend }}</span></td>
+            <td class="num calc-cell">{{ '%.1f'|format(eac) }}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="comment-input" name="comments_{{ t.id }}" value="{{ t.comments }}">{% else %}{{ t.comments }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input type="date" name="start_{{ t.id }}" value="{{ t.start_date.isoformat() if t.start_date else '' }}">{% else %}{{ m.start or '' }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input type="date" name="end_{{ t.id }}" value="{{ t.end_date.isoformat() if t.end_date else '' }}">{% else %}{{ m.end or '' }}{% endif %}</td>
+            {% for d in days %}<td class="gantt-cell {% if m.start and m.end and m.start <= d <= m.end %}active{% endif %}{% if d.weekday() >= 5 %} weekend{% endif %}"></td>{% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if rev.status == 'DRAFT' %}<div class="form-footer"><button class="button primary" type="submit">Save Schedule Changes</button></div>{% endif %}
+  </form>
+</div>
+{% endblock %}

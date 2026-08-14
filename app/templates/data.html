@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active_nav='data' %}
+{% block title %}Calculation Data{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell">
+  <div class="page-title-row">
+    <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. Viewable by all users; editable only by Administrators.</div></div>
+    {% if user.role == 'ADMIN' %}
+      <div class="action-row">
+      {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><button class="button primary">Create Draft from Active</button></form>{% endif %}
+      {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this configuration? The current Active version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="config-version-strip">
+    <div><strong>Configuration Version</strong></div>
+    <form method="get" action="/data" class="inline-form">
+      <select name="version" onchange="this.form.submit()">{% for v in versions %}<option value="{{ v.id }}" {% if v.id==version.id %}selected{% endif %}>{{ v.name }} — {{ v.status }}</option>{% endfor %}</select>
+    </form>
+    <span class="status-badge status-{{ version.status|lower }}">{{ version.status }}</span>
+    {% if version.change_reason %}<span class="subtle">{{ version.change_reason }}</span>{% endif %}
+  </div>
+
+  <form method="get" action="/data" class="filter-bar">
+    <input type="hidden" name="version" value="{{ version.id }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search parameter, key, description, or value">
+    <select name="category"><option value="">All categories</option>{% for c in categories %}<option {% if c==category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+    <button class="button secondary">Search</button><a class="button ghost" href="/data?version={{ version.id }}">Clear</a>
+  </form>
+
+  {% if user.role == 'ADMIN' and version.status == 'DRAFT' %}
+  <details class="admin-add"><summary>Add New Calculation/Catalog Value</summary>
+    <form method="post" action="/data/item/new" class="admin-grid">
+      <input type="hidden" name="version_id" value="{{ version.id }}">
+      <label>Category<input name="category" required list="category-list"></label>
+      <datalist id="category-list">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+      <label>Display Name<input name="label" required></label>
+      <label>Internal Key<input name="key" placeholder="Auto-generated if blank"></label>
+      <label>Parent/Scope Key<input name="parent_key" placeholder="e.g. oracle_jd_edwards_e1"></label>
+      <label>Value Type<select name="value_type"><option>number</option><option>percentage</option><option>hours</option><option>text</option><option>boolean</option><option>catalog</option></select></label>
+      <label>Numeric Value<input name="value_number" type="number" step="any"></label>
+      <label>Text Value<input name="value_text"></label>
+      <label class="span-2">Reason<input name="reason" required></label>
+      <button class="button primary" type="submit">Add Value</button>
+    </form>
+  </details>
+  {% endif %}
+
+  <div class="data-table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.role=='ADMIN' and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for item in items %}
+      <tr class="{% if not item.active %}inactive-row{% endif %}">
+        <td>{{ item.category }}</td><td><strong>{{ item.label }}</strong></td><td><code>{{ item.key }}</code></td><td>{{ item.parent_key or '' }}</td>
+        <td>{% if item.value_number is not none %}{{ item.value_number }}{% elif item.value_text %}{{ item.value_text }}{% endif %}</td><td>{{ item.value_type }}</td><td>{{ 'Yes' if item.active else 'No' }}</td><td>{{ item.description or '' }}</td>
+        {% if user.role=='ADMIN' and version.status=='DRAFT' %}<td>
+          <details><summary>Edit</summary><form method="post" action="/data/item/{{ item.id }}" class="compact-edit">
+            <label>Name<input name="label" value="{{ item.label }}"></label>
+            <label>Numeric<input type="number" step="any" name="value_number" value="{{ item.value_number if item.value_number is not none else '' }}"></label>
+            <label>Text<input name="value_text" value="{{ item.value_text or '' }}"></label>
+            <label>Description<input name="description" value="{{ item.description or '' }}"></label>
+            <label><input type="checkbox" name="active" {% if item.active %}checked{% endif %}> Active</label>
+            <label>Change reason<input name="reason" required></label><button class="button small primary">Save</button>
+          </form></details>
+        </td>{% endif %}
+      </tr>
+    {% else %}<tr><td colspan="9" class="empty">No matching configuration values.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}
