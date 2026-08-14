@@ -2,11 +2,56 @@
 {% set active_nav='users' %}
 {% block title %}Users{% endblock %}
 {% block content %}
-<div class="estimate-shell">
-  <div class="page-title-row"><div><h1>User Management</h1><div class="subtle">Usernames preserve entered capitalization but authenticate case-insensitively.</div></div></div>
-  <div class="two-panel">
-    <section class="card"><h2>Add User</h2><form method="post" action="/admin/users/new" class="stack-form"><label>Username<input name="username" required></label><label>Password<input name="password" type="password" minlength="8" required></label><label>Role<select name="role"><option>ESTIMATOR</option><option>REVIEWER</option><option>APPROVER</option><option>READ_ONLY</option><option>ADMIN</option></select></label><button class="button primary">Create User</button></form></section>
-    <section class="card"><h2>Current Users</h2><table class="data-table"><thead><tr><th>Username</th><th>Role</th><th>Active</th><th>Created</th></tr></thead><tbody>{% for u in users %}<tr><td>{{ u.username }}</td><td>{{ u.role }}</td><td>{{ 'Yes' if u.active else 'No' }}</td><td>{{ u.created_at.strftime('%Y-%m-%d') }}</td></tr>{% endfor %}</tbody></table></section>
-  </div>
+<div class="estimate-shell wide-shell user-admin-shell">
+  <div class="page-title-row"><div><h1>User Management</h1><div class="subtle">Usernames preserve entered capitalization but authenticate case-insensitively. Users may hold multiple roles.</div></div></div>
+
+  <section class="card user-create-card">
+    <h2>Add User</h2>
+    <form method="post" action="/admin/users/create" class="user-form-grid">
+      <label>Username<input name="username" required autocomplete="off"></label>
+      <label>Email Address<input name="email" type="email" autocomplete="off"></label>
+      <label>Initial Password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label class="active-toggle"><span>Account Status</span><span><input name="active" type="checkbox" checked> Active</span></label>
+      <fieldset class="role-fieldset span-all"><legend>Roles</legend>
+        <div class="role-checkboxes">
+          {% for role in ROLE_OPTIONS %}<label><input type="checkbox" name="roles" value="{{role}}" {% if role=='ESTIMATOR' %}checked{% endif %}> {{ROLE_LABELS[role]}}</label>{% endfor %}
+        </div>
+      </fieldset>
+      <div class="span-all"><button class="button primary">Create User</button></div>
+    </form>
+  </section>
+
+  <section class="card user-list-card">
+    <div class="section-heading-row"><div><h2>Current Users</h2><div class="subtle">Roles, email address, account status, and passwords can be changed at any time by an Administrator.</div></div></div>
+    <div class="table-wrap">
+      <table class="data-table user-table">
+        <thead><tr><th>Username</th><th>Email</th><th>Roles</th><th>Active</th><th>Created</th><th>Manage</th></tr></thead>
+        <tbody>{% for u in users %}
+          <tr class="{% if not u.active %}inactive-row{% endif %}">
+            <td><strong>{{ u.username }}</strong></td>
+            <td>{{ u.email or '—' }}</td>
+            <td><div class="role-chips">{% for role in u.role_names %}<span class="role-chip">{{ROLE_LABELS.get(role,role)}}</span>{% endfor %}</div></td>
+            <td>{{ 'Yes' if u.active else 'No' }}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              <details class="user-edit"><summary>Edit</summary>
+                <form method="post" action="/admin/users/{{u.id}}/update" class="user-edit-form">
+                  <label>Email Address<input name="email" type="email" value="{{u.email or ''}}"></label>
+                  <label>New Password <span class="subtle">(leave blank to keep current)</span><input name="password" type="password" minlength="8" autocomplete="new-password"></label>
+                  <label class="active-toggle"><span><input name="active" type="checkbox" {% if u.active %}checked{% endif %}> Active</span></label>
+                  <fieldset class="role-fieldset"><legend>Roles</legend>
+                    <div class="role-checkboxes compact">
+                      {% for role in ROLE_OPTIONS %}<label><input type="checkbox" name="roles" value="{{role}}" {% if role in u.role_names %}checked{% endif %}> {{ROLE_LABELS[role]}}</label>{% endfor %}
+                    </div>
+                  </fieldset>
+                  <button class="button primary small" type="submit">Save User</button>
+                </form>
+              </details>
+            </td>
+          </tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
 </div>
 {% endblock %}
