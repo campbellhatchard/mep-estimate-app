@@ -34,5 +34,5 @@ def current_user(request: Request, db: Session) -> User:
     return user
 
 def require_role(user: User, *roles: str):
-    if user.role not in roles:
+    if not user.has_role(*roles):
         raise HTTPException(status_code=403, detail="You do not have permission to perform this action")
