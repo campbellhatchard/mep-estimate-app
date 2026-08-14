@@ -143,6 +143,11 @@ def test_deployed_over_change_resets_baseline_applications():
             assert any(a.config_type != 'No Config' for a in rev.applications)
             data=estimate_form(rev,db)
             data['erp']='Oracle Fusion'
+            # The Estimate page resets every visible application/package selector before
+            # posting an ERP/Deployed Over change. Model that exact user interaction.
+            for key in list(data):
+                if key.startswith('app_'):
+                    data[key]='No Config'
         assert c.post(f'/estimate/{rid}',data=data,follow_redirects=False).status_code==303
         with SessionLocal() as db:
             rev=db.get(EstimateRevision,rid)
