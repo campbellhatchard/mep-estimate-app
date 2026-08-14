@@ -4,29 +4,48 @@
 {% block content %}
 <div class="estimate-shell wide-shell">
   <div class="page-title-row">
-    <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. Viewable by all users; editable only by Administrators.</div></div>
+    <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. MEP and CIP configuration lifecycles are independent.</div></div>
     {% if user.has_role('ADMIN') %}
       <div class="action-row">
-      {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><button class="button primary">Create Draft from Active</button></form>{% endif %}
-      {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this configuration? The current Active version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
+      {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><input type="hidden" name="product" value="{{product_type}}"><button class="button primary">Create {{product_type}} Draft from Active</button></form>{% endif %}
+      {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this {{product_type}} configuration? The current Active {{product_type}} version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
       </div>
     {% endif %}
   </div>
 
+  <div class="product-config-tabs">
+    <a class="button {% if product_type=='MEP' %}primary{% endif %}" href="/data?product=MEP">MEP Calculation Data</a>
+    <a class="button {% if product_type=='CIP' %}primary{% endif %}" href="/data?product=CIP">CIP Calculation Data</a>
+  </div>
+
   <div class="config-version-strip">
-    <div><strong>Configuration Version</strong></div>
+    <div><strong>{{product_type}} Configuration Version</strong></div>
     <form method="get" action="/data" class="inline-form">
+      <input type="hidden" name="product" value="{{product_type}}">
       <select name="version" onchange="this.form.submit()">{% for v in versions %}<option value="{{ v.id }}" {% if v.id==version.id %}selected{% endif %}>{{ v.name }} — {{ v.status }}</option>{% endfor %}</select>
     </form>
     <span class="status-badge status-{{ version.status|lower }}">{{ version.status }}</span>
     {% if version.change_reason %}<span class="subtle">{{ version.change_reason }}</span>{% endif %}
   </div>
 
+  {% if product_type=='CIP' and user.has_role('ADMIN') and version.status=='DRAFT' %}
+  <details class="admin-add"><summary>Add New CIP Software Release</summary>
+    <form method="post" action="/cip/data/release/new" class="admin-grid">
+      <input type="hidden" name="version_id" value="{{version.id}}">
+      <label>Release<input name="label" placeholder="Release 26.3" required></label>
+      <label class="span-2">Reason<input name="reason" required placeholder="Reason for adding the software release"></label>
+      <button class="button primary" type="submit">Add Release &amp; Clone Current Catalog</button>
+    </form>
+    <div class="subtle">The current latest Desktop, Mobile and Integration catalogs are copied into the new release. Administrators can then adjust availability and effort before activation.</div>
+  </details>
+  {% endif %}
+
   <form method="get" action="/data" class="filter-bar">
+    <input type="hidden" name="product" value="{{product_type}}">
     <input type="hidden" name="version" value="{{ version.id }}">
     <input type="search" name="q" value="{{ q }}" placeholder="Search parameter, key, description, or value">
     <select name="category"><option value="">All categories</option>{% for c in categories %}<option {% if c==category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
-    <button class="button secondary">Search</button><a class="button ghost" href="/data?version={{ version.id }}">Clear</a>
+    <button class="button secondary">Search</button><a class="button ghost" href="/data?product={{product_type}}&version={{ version.id }}">Clear</a>
   </form>
 
   {% if user.has_role('ADMIN') and version.status == 'DRAFT' %}
@@ -37,10 +56,10 @@
       <datalist id="category-list">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
       <label>Display Name<input name="label" required></label>
       <label>Internal Key<input name="key" placeholder="Auto-generated if blank"></label>
-      <label>Parent/Scope Key<input name="parent_key" placeholder="e.g. oracle_jd_edwards_e1"></label>
-      <label>Value Type<select name="value_type"><option>number</option><option>percentage</option><option>hours</option><option>text</option><option>boolean</option><option>catalog</option></select></label>
+      <label>Parent/Scope Key<input name="parent_key" placeholder="e.g. RELEASE_26_3"></label>
+      <label>Value Type<select name="value_type"><option>number</option><option>percentage</option><option>hours</option><option>text</option><option>boolean</option><option>catalog</option><option>json</option></select></label>
       <label>Numeric Value<input name="value_number" type="number" step="any"></label>
-      <label>Text Value<input name="value_text"></label>
+      <label>Text / JSON Value<input name="value_text"></label>
       <label class="span-2">Reason<input name="reason" required></label>
       <button class="button primary" type="submit">Add Value</button>
     </form>
@@ -59,7 +78,7 @@
           <details><summary>Edit</summary><form method="post" action="/data/item/{{ item.id }}" class="compact-edit">
             <label>Name<input name="label" value="{{ item.label }}"></label>
             <label>Numeric<input type="number" step="any" name="value_number" value="{{ item.value_number if item.value_number is not none else '' }}"></label>
-            <label>Text<input name="value_text" value="{{ item.value_text or '' }}"></label>
+            <label>Text / JSON<input name="value_text" value="{{ item.value_text or '' }}"></label>
             <label>Description<input name="description" value="{{ item.description or '' }}"></label>
             <label><input type="checkbox" name="active" {% if item.active %}checked{% endif %}> Active</label>
             <label>Change reason<input name="reason" required></label><button class="button small primary">Save</button>
