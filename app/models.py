@@ -5,15 +5,40 @@ from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignK
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
+ROLE_ORDER = ["ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER", "READ_ONLY"]
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     username_normalized: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(300))
+    # Retained for backward compatibility. Multi-role authorization uses user_roles.
     role: Mapped[str] = mapped_column(String(30), default="ESTIMATOR")
+    email: Mapped[Optional[str]] = mapped_column(String(254), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    roles: Mapped[list["UserRole"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def role_names(self) -> list[str]:
+        names = {r.role for r in self.roles if r.role}
+        if not names and self.role:
+            names.add(self.role)
+        order = {name: i for i, name in enumerate(ROLE_ORDER)}
+        return sorted(names, key=lambda x: order.get(x, 999))
+
+    def has_role(self, *roles: str) -> bool:
+        mine = set(self.role_names)
+        return any(role in mine for role in roles)
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+    __table_args__ = (UniqueConstraint("user_id", "role", name="uq_user_role"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(30), index=True)
+    user: Mapped[User] = relationship(back_populates="roles")
 
 class ConfigurationVersion(Base):
     __tablename__ = "configuration_versions"
