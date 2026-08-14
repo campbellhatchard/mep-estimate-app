@@ -1,23 +1,27 @@
 # Cloud Inventory MEP Estimate Application
 
-This repository contains the first runnable application build that replaces the approved `Estimate_2026_MEP_18` Excel workbook with a controlled, auditable web application.
+This repository contains the runnable application that replaces the approved `Estimate_2026_MEP_18` Excel workbook with a controlled, auditable web application.
 
 ## Current build scope
 
 Implemented:
 
 - Workbook-aligned **Estimate** page with approved dropdown values and ERP-specific application/package catalogs.
+- Iterative Estimate recalculation: calculation-driving fields save/recalculate on field exit or selection change so hours and fees build as the estimate is entered.
+- **Deployed Over** changes reset the ERP application/package catalog to **No Config** before loading the new ERP catalog.
 - **Estimate Detail** with Base Hours, editable Mod Hours, Unit Testing, Notes, totals, and audited Unit Testing Factor override.
-- **Calculations** by Plan, Design, Build, Test, and Go Live with editable Standard Adjust and mandatory adjustment notes.
+- **Calculations** by Plan, Design, Build, Test, and Go-Live with editable Standard Adjust and mandatory adjustment notes.
 - **Schedule** generated from the estimate, spreadsheet-style planning grid, editable resource/status/% complete/change order/hours used/comments/dates, and Gantt timeline.
 - Schedule staleness warning and explicit regeneration so manual schedule edits are never silently overwritten.
 - Searchable **Calculation Data** area, viewable by all and editable by Administrators in Draft configuration versions.
 - Configuration lifecycle: Draft -> Active -> Retired, with schema fields reserved for future reviewer/approver workflow.
 - Immutable estimate/configuration pinning. Existing revisions retain their original configuration. Explicit **Rebase to Current Model** creates a new revision.
 - Estimate lifecycle: Draft -> Review -> Approved -> Superseded.
-- Roles: ADMIN, ESTIMATOR, REVIEWER, APPROVER, READ_ONLY.
+- Multi-role users: Administrator, Estimator, Reviewer, Approver, and Read Only may be assigned in any valid combination.
+- User email address, Active/Inactive status, role maintenance, and Administrator password reset capability.
 - Case-insensitive username authentication while preserving display capitalization.
-- Append-only audit events for estimate, detail, calculations, schedule, configuration, lifecycle, and exports.
+- Append-only audit events for estimate, detail, calculations, schedule, configuration, lifecycle, user administration, and exports.
+- Cloud Inventory branding using the full-color logo on light application surfaces.
 - PDF estimate generation.
 - Jira CSV export generated from Schedule using the approved workbook's complete 27-column header structure. Dependency/link columns are reserved for later relationship mapping; Parent/Epic hierarchy is populated in v1.
 - PostgreSQL production database; SQLite supported for local development.
@@ -37,6 +41,8 @@ The application separates:
 Material numeric assumptions from the workbook have been externalized into the initial configuration model rather than left as hidden source-code constants.
 Required calculation parameters do **not** have business-value fallbacks in source code; a missing required configuration value fails explicitly rather than silently changing the estimate.
 
+Approved spelling/name corrections are presented at the user interface while legacy internal lookup values are retained where needed to protect calculation parity and historical reproducibility.
+
 ## Local run
 
 Python 3.12+ is recommended.
@@ -50,7 +56,7 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.run:app --reload
 ```
 
 Open `http://127.0.0.1:8000`.
@@ -92,20 +98,23 @@ The current suite validates:
 - PDF and Jira CSV output;
 - adjustment-note enforcement and audit events;
 - configuration-version immutability and explicit rebase;
-- Approved revision locking.
+- Approved revision locking;
+- Deployed Over/ERP catalog reset behavior;
+- multi-role user creation and maintenance;
+- user email and Active/Inactive status;
+- approved user-facing terminology normalization.
 
 ## Render deployment
 
 The repository includes `render.yaml`.
 
-1. Push this repository to the GitHub repository that will host the application.
-2. In Render, create a Blueprint from that repository.
-3. Set the `ADMIN_PASSWORD` secret when prompted.
-4. Render creates the web service and PostgreSQL database.
-5. Alembic runs as the pre-deploy migration command.
-6. The application seeds the approved initial configuration and Administrator on first startup.
+1. Push or merge the approved release to the GitHub `main` branch.
+2. Render's Blueprint-linked web service detects the `main` update.
+3. Alembic runs as the pre-deploy migration command.
+4. The application starts through `uvicorn app.run:app`.
+5. Existing data remains in the durable Render PostgreSQL database.
 
-The database is the durable system of record. Do not rely on the Render web-service filesystem for persistent application data.
+For a first-time Blueprint creation, set the `ADMIN_PASSWORD` secret when prompted. The database is the durable system of record; do not rely on the Render web-service filesystem for persistent application data.
 
 ## Source workbook controls
 
@@ -117,7 +126,9 @@ Before Production approval, complete the Golden Scenario validation described in
 
 ```text
 app/
-  main.py                    FastAPI routes and workflow
+  main.py                    Core FastAPI routes and workflow
+  run.py                     Enhanced production application entry point
+  enhancements.py            Multi-role admin and terminology normalization
   models.py                  SQLAlchemy domain model
   database.py                Database setup
   auth.py                    Authentication/authorization
@@ -130,7 +141,9 @@ app/
     approved_model_2026_08_1.json
     schedule_template_2026.json
   templates/                 Workbook-aligned server-rendered UI
-  static/app.css
+  static/
+    app.css
+    ci-logo-full.webp
 migrations/                  Alembic migrations
 tests/                       Automated workflow tests
 docs/                        Design, workbook inventory, rule/config catalogs

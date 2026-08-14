@@ -3,7 +3,7 @@ import json, os, re
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
-from .models import User, ConfigurationVersion, ConfigItem
+from .models import User, UserRole, ConfigurationVersion, ConfigItem
 from .auth import normalize_username, hash_password
 
 SEED_PATH = Path(__file__).parent / "seed" / "approved_model_2026_08_1.json"
@@ -23,8 +23,11 @@ def seed_database(db: Session):
     admin = db.query(User).filter(User.username_normalized == "admin").first()
     if not admin:
         password = os.getenv("ADMIN_PASSWORD", "ChangeMe123!")
-        admin = User(username="Admin", username_normalized="admin", password_hash=hash_password(password), role="ADMIN")
+        admin = User(username="Admin", username_normalized="admin", password_hash=hash_password(password), role="ADMIN", active=True)
         db.add(admin); db.flush()
+    if not db.query(UserRole).filter(UserRole.user_id == admin.id, UserRole.role == "ADMIN").first():
+        db.add(UserRole(user_id=admin.id, role="ADMIN"))
+        db.flush()
     if db.query(ConfigurationVersion).count():
         db.commit(); return
     data = json.loads(SEED_PATH.read_text())

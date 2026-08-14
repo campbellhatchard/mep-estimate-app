@@ -5,7 +5,7 @@
 <div class="estimate-shell wide-shell">
   <div class="page-title-row">
     <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. Viewable by all users; editable only by Administrators.</div></div>
-    {% if user.role == 'ADMIN' %}
+    {% if user.has_role('ADMIN') %}
       <div class="action-row">
       {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><button class="button primary">Create Draft from Active</button></form>{% endif %}
       {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this configuration? The current Active version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
@@ -29,7 +29,7 @@
     <button class="button secondary">Search</button><a class="button ghost" href="/data?version={{ version.id }}">Clear</a>
   </form>
 
-  {% if user.role == 'ADMIN' and version.status == 'DRAFT' %}
+  {% if user.has_role('ADMIN') and version.status == 'DRAFT' %}
   <details class="admin-add"><summary>Add New Calculation/Catalog Value</summary>
     <form method="post" action="/data/item/new" class="admin-grid">
       <input type="hidden" name="version_id" value="{{ version.id }}">
@@ -49,13 +49,13 @@
 
   <div class="data-table-wrap">
   <table class="data-table">
-    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.role=='ADMIN' and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
+    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.has_role('ADMIN') and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
     <tbody>
     {% for item in items %}
       <tr class="{% if not item.active %}inactive-row{% endif %}">
-        <td>{{ item.category }}</td><td><strong>{{ item.label }}</strong></td><td><code>{{ item.key }}</code></td><td>{{ item.parent_key or '' }}</td>
-        <td>{% if item.value_number is not none %}{{ item.value_number }}{% elif item.value_text %}{{ item.value_text }}{% endif %}</td><td>{{ item.value_type }}</td><td>{{ 'Yes' if item.active else 'No' }}</td><td>{{ item.description or '' }}</td>
-        {% if user.role=='ADMIN' and version.status=='DRAFT' %}<td>
+        <td>{{ item.category }}</td><td><strong>{{ item.label|ci_term }}</strong></td><td><code>{{ item.key }}</code></td><td>{{ item.parent_key or '' }}</td>
+        <td>{% if item.value_number is not none %}{{ item.value_number }}{% elif item.value_text %}{{ item.value_text }}{% endif %}</td><td>{{ item.value_type }}</td><td>{{ 'Yes' if item.active else 'No' }}</td><td>{{ (item.description or '')|ci_text }}</td>
+        {% if user.has_role('ADMIN') and version.status=='DRAFT' %}<td>
           <details><summary>Edit</summary><form method="post" action="/data/item/{{ item.id }}" class="compact-edit">
             <label>Name<input name="label" value="{{ item.label }}"></label>
             <label>Numeric<input type="number" step="any" name="value_number" value="{{ item.value_number if item.value_number is not none else '' }}"></label>

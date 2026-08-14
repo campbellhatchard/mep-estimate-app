@@ -1,18 +1,18 @@
 {% extends "base.html" %}{% set active_tab='estimate' %}{% block title %}Estimate {{estimate.estimate_number}}{% endblock %}{% block pageclass %}sheet-page{% endblock %}
 {% macro select(name,value,options,cls='input-cell') -%}
-<select name="{{name}}" class="{{cls}}" {% if readonly %}disabled{% endif %}>{% for o in options %}<option value="{{o}}" {% if (o|string)==(value|string) %}selected{% endif %}>{{o}}</option>{% endfor %}</select>
+<select name="{{name}}" class="{{cls}}" {% if readonly %}disabled{% endif %}>{% for o in options %}<option value="{{o}}" {% if (o|string)==(value|string) %}selected{% endif %}>{{o|ci_term}}</option>{% endfor %}</select>
 {%- endmacro %}
 {% macro yn(name,value) -%}<select name="{{name}}" class="input-cell" {% if readonly %}disabled{% endif %}><option value="No" {% if not value %}selected{% endif %}>No</option><option value="Yes" {% if value %}selected{% endif %}>Yes</option></select>{%- endmacro %}
 {% block content %}
 <div class="actionbar">
  <div class="action-group">
-  {% if not readonly %}<button form="estimateForm" class="primary">Save Estimate</button>{% endif %}
+  {% if not readonly %}<button form="estimateForm" class="primary">Save Estimate</button><span id="autosaveStatus" class="autosave-status" aria-live="polite">Saved</span>{% endif %}
   <a class="button" href="/estimate/{{rev.id}}/pdf">PDF Estimate</a><a class="button" href="/estimate/{{rev.id}}/jira.csv">Jira CSV</a>
  </div>
  <div class="action-group">
   {% if rev.status=='DRAFT' %}<form method="post" action="/estimate/{{rev.id}}/status/submit"><button>Submit for Review</button></form>{% endif %}
-  {% if rev.status=='REVIEW' and user.role in ['ADMIN','REVIEWER','APPROVER'] %}<form method="post" action="/estimate/{{rev.id}}/status/return"><button>Return to Draft</button></form>{% endif %}
-  {% if rev.status=='REVIEW' and user.role in ['ADMIN','APPROVER'] %}<form method="post" action="/estimate/{{rev.id}}/status/approve"><button class="success">Approve / Final</button></form>{% endif %}
+  {% if rev.status=='REVIEW' and user.has_role('ADMIN','REVIEWER','APPROVER') %}<form method="post" action="/estimate/{{rev.id}}/status/return"><button>Return to Draft</button></form>{% endif %}
+  {% if rev.status=='REVIEW' and user.has_role('ADMIN','APPROVER') %}<form method="post" action="/estimate/{{rev.id}}/status/approve"><button class="success">Approve / Final</button></form>{% endif %}
   {% if rev.status in ['APPROVED','FINAL'] %}<form method="post" action="/estimate/{{rev.id}}/new-revision"><button>New Revision</button></form><form method="post" action="/estimate/{{rev.id}}/new-revision?rebase=true"><button>Rebase to Current Model</button></form>{% endif %}
  </div>
 </div>
@@ -40,24 +40,24 @@
   <label>EPP Only Integration Type:{{select('epp_integration',rev.epp_integration,epp_integration)}}</label>
   <label>How Many Sites Print Labels:<input class="input-cell num" name="label_sites" type="number" min="0" value="{{rev.label_sites}}" {% if readonly %}disabled{% endif %}></label>
  </div>
- <div class="sub-label">Base Line Applications:</div>
+ <div class="sub-label">Baseline Applications:</div>
  <div class="app-grid">
- {% for row in apps|batch(5,None) %}{% for a in row %}{% if a %}<div class="app-pair"><span>{{a.label}}</span>{{select('app_' ~ a.id,a.config_type,app_types)}}</div>{% else %}<div></div>{% endif %}{% endfor %}{% endfor %}
+ {% for row in apps|batch(5,None) %}{% for a in row %}{% if a %}<div class="app-pair"><span>{{a.label|ci_term}}</span>{{select('app_' ~ a.id,a.config_type,app_types)}}</div>{% else %}<div></div>{% endif %}{% endfor %}{% endfor %}
  </div>
- {% if packages %}<div class="app-grid package-grid">{% for row in packages|batch(5,None) %}{% for a in row %}{% if a %}<div class="app-pair"><span>{{a.label}}</span>{{select('app_' ~ a.id,a.config_type,package_types)}}</div>{% else %}<div></div>{% endif %}{% endfor %}{% endfor %}</div>{% endif %}
- <div class="counts-row"><span>Baseline Count: <b>{{ apps|selectattr('config_type','in',['Baseline','Baseline_4'])|list|length }}</b></span><span>Mod Count: <b>{{ apps|selectattr('config_type','equalto','Mod Required')|list|length }}</b></span><span>Package Count: <b>{{ packages|rejectattr('config_type','equalto','No Config')|list|length }}</b></span></div>
+ {% if packages %}<div class="app-grid package-grid">{% for row in packages|batch(5,None) %}{% for a in row %}{% if a %}<div class="app-pair"><span>{{a.label|ci_term}}</span>{{select('app_' ~ a.id,a.config_type,package_types)}}</div>{% else %}<div></div>{% endif %}{% endfor %}{% endfor %}</div>{% endif %}
+ <div class="counts-row" id="counts-row"><span>Baseline Count: <b>{{ apps|selectattr('config_type','in',['Baseline','Baseline_4'])|list|length }}</b></span><span>Mod Count: <b>{{ apps|selectattr('config_type','equalto','Mod Required')|list|length }}</b></span><span>Package Count: <b>{{ packages|rejectattr('config_type','equalto','No Config')|list|length }}</b></span></div>
  <div class="sub-label custom-label">Custom Applications:</div>
  <div class="custom-grid">
  {% for row in customs|batch(5,None) %}{% for c in row %}{% if c %}<div class="custom-pair"><input class="custom-input" name="custom_desc_{{c.id}}" value="{{c.description}}" placeholder="Application description" {% if readonly %}disabled{% endif %}>{{select('custom_complexity_' ~ c.id,c.complexity,custom_effort,'custom-select')}}</div>{% else %}<div></div>{% endif %}{% endfor %}{% endfor %}
  </div>
  <div class="estimate-options-grid">
   <label>Labels Required:{{yn('labels_required',rev.labels_required)}}</label><label>Label Count:<input class="input-cell num" name="label_count" type="number" min="0" max="20" value="{{rev.label_count}}" {% if readonly %}disabled{% endif %}></label>
-  <label>Conveyor / scale interface Required:{{yn('iot_required',rev.iot_required)}}</label><label>Serv Def Count:<input class="input-cell num" name="iot_count" type="number" min="0" max="10" value="{{rev.iot_count}}" {% if readonly %}disabled{% endif %}></label>
-  <label>ERP Integration Required:{{yn('erp_integration_required',rev.erp_integration_required)}}</label><label>ERP Serv Def Count:<input class="input-cell num" name="erp_integration_count" type="number" min="0" max="20" value="{{rev.erp_integration_count}}" {% if readonly %}disabled{% endif %}></label>
-  <label>Data Rep Session Required:{{yn('data_rep_required',rev.data_rep_required)}}</label><label>Data Rep Session Count:<input class="input-cell num" name="data_rep_count" type="number" min="0" max="20" value="{{rev.data_rep_count}}" {% if readonly %}disabled{% endif %}></label>
+  <label>Conveyor / Scale Interface Required:{{yn('iot_required',rev.iot_required)}}</label><label>Service Definition Count:<input class="input-cell num" name="iot_count" type="number" min="0" max="10" value="{{rev.iot_count}}" {% if readonly %}disabled{% endif %}></label>
+  <label>ERP Integration Required:{{yn('erp_integration_required',rev.erp_integration_required)}}</label><label>ERP Service Definition Count:<input class="input-cell num" name="erp_integration_count" type="number" min="0" max="20" value="{{rev.erp_integration_count}}" {% if readonly %}disabled{% endif %}></label>
+  <label>Data Replication Session Required:{{yn('data_rep_required',rev.data_rep_required)}}</label><label>Data Replication Session Count:<input class="input-cell num" name="data_rep_count" type="number" min="0" max="20" value="{{rev.data_rep_count}}" {% if readonly %}disabled{% endif %}></label>
   <label>Consultant Access Setup Required:{{yn('consultant_access_setup',rev.consultant_access_setup)}}</label><label>Onboarding:{{yn('onboarding',rev.onboarding)}}</label>
   <label>Number Of Users:{{select('user_count',rev.user_count,user_counts)}}</label><label>Test Cycles:<select name="test_cycles" class="input-cell" {% if readonly %}disabled{% endif %}>{% for n in [1,2,3] %}<option {% if rev.test_cycles==n %}selected{% endif %}>{{n}}</option>{% endfor %}</select></label>
-  <label>Number Of Go Live Sites:<input class="input-cell num" name="go_live_sites" type="number" min="0" value="{{rev.go_live_sites}}" {% if readonly %}disabled{% endif %}></label><label>Go Live Type:{{select('go_live_type',rev.go_live_type,go_live)}}</label>
+  <label>Number Of Go-Live Sites:<input class="input-cell num" name="go_live_sites" type="number" min="0" value="{{rev.go_live_sites}}" {% if readonly %}disabled{% endif %}></label><label>Go-Live Type:{{select('go_live_type',rev.go_live_type,go_live)}}</label>
   <label>Number Of Sites For UAT:<select name="uat_sites" class="input-cell" {% if readonly %}disabled{% endif %}>{% for n in [1,2,3] %}<option value="{{n}}" {% if rev.uat_sites==n %}selected{% endif %}>{{n}}</option>{% endfor %}</select></label><label>Base Test %:<select name="base_test_pct" class="input-cell" {% if readonly %}disabled{% endif %}>{% for p in test_efforts %}<option value="{{p}}" {% if p==rev.base_test_pct %}selected{% endif %}>{{'%.0f%%'|format(p*100)}}</option>{% endfor %}</select></label>
  </div>
  <div class="section-bar">Optional Services</div>
@@ -67,10 +67,87 @@
    <label>End User Training:{{yn('end_user_training',rev.end_user_training)}}</label><label>App Dev Training:{{yn('app_dev_training',rev.app_dev_training)}}</label>
  </div>
  <div class="section-bar">Project Delivery</div>
- <div class="delivery-grid"><label>Markup Percentage:{{select('delivery_method',rev.delivery_method,delivery)}}</label><label>Low Factor:<input disabled class="readonly-cell" value="{{'%.2f%%'|format(summary.low_factor*100)}}"></label><label>High Factor:<input disabled class="readonly-cell" value="{{'%.2f%%'|format(summary.high_factor*100)}}"></label></div>
+ <div class="delivery-grid" id="delivery-derived"><label>Markup Percentage:{{select('delivery_method',rev.delivery_method,delivery)}}</label><label>Low Factor:<input disabled class="readonly-cell" value="{{'%.2f%%'|format(summary.low_factor*100)}}"></label><label>High Factor:<input disabled class="readonly-cell" value="{{'%.2f%%'|format(summary.high_factor*100)}}"></label></div>
  <div class="section-bar">Summary</div>
- <table class="summary-table"><thead><tr><th>Solution</th><th>Hours</th><th>Fees</th><th>Est Duration</th></tr></thead><tbody><tr><td>Estimate</td><td>{{'%.0f'|format(summary.hours)}}</td><td>{{rev.currency}} {{'{:,.2f}'.format(summary.fees)}}</td><td>{{'%.2f'|format(summary.duration_months)}} Months</td></tr><tr><td>Range Low</td><td>{{'%.0f'|format(summary.low_hours)}}</td><td>{{rev.currency}} {{'{:,.2f}'.format(summary.low_fees)}}</td><td></td></tr><tr><td>Range High</td><td>{{'%.0f'|format(summary.high_hours)}}</td><td>{{rev.currency}} {{'{:,.2f}'.format(summary.high_fees)}}</td><td></td></tr></tbody></table>
- <div class="section-bar">Presales Components</div><div class="presales-box"><b>For Presales presentation Slide</b><span>Timeline (Proposed): {{'%.2f'|format(summary.duration_months)}} Months</span></div>
+ <table class="summary-table" id="estimate-summary"><thead><tr><th>Solution</th><th>Hours</th><th>Fees</th><th>Est Duration</th></tr></thead><tbody><tr><td>Estimate</td><td>{{'%.0f'|format(summary.hours)}}</td><td>{{rev.currency|ci_term}} {{'{:,.2f}'.format(summary.fees)}}</td><td>{{'%.2f'|format(summary.duration_months)}} Months</td></tr><tr><td>Range Low</td><td>{{'%.0f'|format(summary.low_hours)}}</td><td>{{rev.currency|ci_term}} {{'{:,.2f}'.format(summary.low_fees)}}</td><td></td></tr><tr><td>Range High</td><td>{{'%.0f'|format(summary.high_hours)}}</td><td>{{rev.currency|ci_term}} {{'{:,.2f}'.format(summary.high_fees)}}</td><td></td></tr></tbody></table>
+ <div class="section-bar">PreSales Components</div><div class="presales-box"><b>For PreSales Presentation Slide</b><span>Timeline (Proposed): {{'%.2f'|format(summary.duration_months)}} Months</span></div>
 </div>
 </form>
+{% endblock %}
+{% block scripts %}
+{% if not readonly %}
+<script>
+(() => {
+  const form = document.getElementById('estimateForm');
+  const status = document.getElementById('autosaveStatus');
+  if (!form || !status) return;
+  let saving = false;
+  let pending = false;
+  let lastTrigger = null;
+
+  const setStatus = (text, state='') => {
+    status.textContent = text;
+    status.className = `autosave-status ${state}`;
+  };
+
+  const replaceFromResponse = (html, id) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const incoming = doc.getElementById(id);
+    const existing = document.getElementById(id);
+    if (incoming && existing) existing.innerHTML = incoming.innerHTML;
+  };
+
+  async function processQueue() {
+    if (saving) return;
+    while (pending) {
+      pending = false;
+      saving = true;
+      const trigger = lastTrigger;
+      const triggerName = trigger ? trigger.name : '';
+      setStatus('Calculating…', 'saving');
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: {'X-Autosave': '1'}
+        });
+        const html = await response.text();
+        if (!response.ok) {
+          setStatus('Pending — complete related fields', 'pending');
+        } else if (triggerName === 'erp') {
+          setStatus('Saved — refreshing applications…', 'saved');
+          window.location.reload();
+          return;
+        } else {
+          replaceFromResponse(html, 'estimate-summary');
+          replaceFromResponse(html, 'counts-row');
+          replaceFromResponse(html, 'delivery-derived');
+          setStatus('Saved', 'saved');
+        }
+      } catch (error) {
+        setStatus('Save failed — use Save Estimate', 'error');
+      } finally {
+        saving = false;
+      }
+    }
+  }
+
+  function queueSave(field) {
+    lastTrigger = field;
+    pending = true;
+    processQueue();
+  }
+
+  form.querySelectorAll('input[name]').forEach(field => field.addEventListener('blur', () => queueSave(field)));
+  form.querySelectorAll('select[name]').forEach(field => field.addEventListener('change', () => {
+    if (field.name === 'erp') {
+      form.querySelectorAll('select[name^="app_"]').forEach(app => {
+        if ([...app.options].some(o => o.value === 'No Config')) app.value = 'No Config';
+      });
+    }
+    queueSave(field);
+  }));
+})();
+</script>
+{% endif %}
 {% endblock %}
