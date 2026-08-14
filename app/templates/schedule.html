@@ -30,12 +30,12 @@
           {% set eac = m.eac %}
           <tr class="{% if t.task == t.phase %}phase-row{% elif t.task == 'Not Included' %}not-included{% endif %}">
             <td class="sticky-col c1">{{ t.task_id }}</td>
-            <td class="sticky-col c2 task-name">{{ t.task }}</td>
-            <td>{{ t.task_owner }}</td>
-            <td class="text-cell">{{ t.description }}</td>
-            <td class="text-cell">{{ t.purpose }}</td>
+            <td class="sticky-col c2 task-name">{{ t.task|ci_text }}</td>
+            <td>{{ t.task_owner|ci_text }}</td>
+            <td class="text-cell">{{ t.description|ci_text }}</td>
+            <td class="text-cell">{{ t.purpose|ci_text }}</td>
             <td>{% if rev.status == 'DRAFT' and not m.phase %}<input name="resource_{{ t.id }}" value="{{ t.resource_assigned }}">{% else %}{{ t.resource_assigned }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<select name="status_{{ t.id }}">{% for s in statuses %}<option {% if s==t.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>{% else %}{{ t.status }}{% endif %}</td>
+            <td>{% if rev.status == 'DRAFT' and not m.phase %}<select name="status_{{ t.id }}">{% for s in statuses %}<option value="{{s}}" {% if s==t.status %}selected{% endif %}>{{ s|ci_term }}</option>{% endfor %}</select>{% else %}{{ t.status|ci_term }}{% endif %}</td>
             <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" min="0" max="100" name="pct_{{ t.id }}" value="{{ t.percent_complete }}">{% else %}{{ '%.0f'|format(m.percent*100) }}%{% endif %}</td>
             <td class="num">{{ '%.1f'|format(m.non_bill) }}</td>
             <td class="num calc-cell">{{ '%.1f'|format(m.budget) }}</td>
