@@ -21,6 +21,8 @@ services:
         sync: false
       - key: ENVIRONMENT
         value: production
+      - key: APP_TIMEZONE
+        value: America/Chicago
       - key: PYTHON_VERSION
         value: 3.12.7
 
