@@ -22,7 +22,7 @@
 {% if rev %}
 {% set displayed_product = 'CIP' if rev.engine_version and rev.engine_version.startswith('CIP-') else 'MEP' %}
 <div class="estimate-head">
-  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
+  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }} of {{ estimate.revisions|length }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
   <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
 </div>
 <nav class="tabs">
@@ -30,6 +30,7 @@
   <a class="{% if active_tab=='detail' %}active{% endif %}" href="/estimate/{{rev.id}}/detail">Estimate Detail</a>
   <a class="{% if active_tab=='calculations' %}active{% endif %}" href="/estimate/{{rev.id}}/calculations">Calculations</a>
   <a class="{% if active_tab=='schedule' %}active{% endif %}" href="/estimate/{{rev.id}}/schedule">Schedule</a>
+  <a class="{% if active_tab=='history' %}active{% endif %}" href="/estimate/{{rev.id}}/revisions">Revision History</a>
   <a class="{% if active_tab=='audit' %}active{% endif %}" href="/estimate/{{rev.id}}/audit">Audit</a>
 </nav>
 {% endif %}
