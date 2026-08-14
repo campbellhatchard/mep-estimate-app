@@ -4,6 +4,7 @@ from . import main as core
 from .enhancements import configure_templates, register_routes, clean_schedule_tasks
 from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
+from .revision_history import register_revision_history
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
@@ -25,3 +26,5 @@ def _generate_schedule_with_normalized_text(db, rev, replace=True):
 
 core.generate_schedule = _generate_schedule_with_normalized_text
 register_cip(app, core, core.generate_schedule)
+# Register revision lifecycle last so the same controlled behavior applies to both products.
+register_revision_history(app, core)
