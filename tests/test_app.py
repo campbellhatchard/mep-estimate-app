@@ -8,9 +8,9 @@ os.environ['SESSION_SECRET'] = 'pytest-secret'
 os.environ['ADMIN_PASSWORD'] = 'TestPass123!'
 
 from fastapi.testclient import TestClient
-from app.main import app
+from app.run import app
 from app.database import SessionLocal
-from app.models import EstimateRevision, ConfigItem, ConfigurationVersion, AuditEvent
+from app.models import EstimateRevision, EstimateApplication, ConfigItem, ConfigurationVersion, AuditEvent, User
 
 
 def login(c):
@@ -64,7 +64,6 @@ def test_end_to_end_and_case_insensitive_username():
 def test_adjustments_require_notes_and_are_audited():
     with TestClient(app) as c:
         login(c); rid=create(c)
-        # Calculation line with non-zero adjustment and no note must fail.
         r=c.post(f'/estimate/{rid}/calculations',data={'line_count':'1','line_key_0':'PLAN_KICKOFF','adjust_0':'4','notes_0':''})
         assert r.status_code==400
         r=c.post(f'/estimate/{rid}/calculations',data={'line_count':'1','line_key_0':'PLAN_KICKOFF','adjust_0':'4','notes_0':'Additional kickoff effort'},follow_redirects=False)
@@ -78,7 +77,6 @@ def test_configuration_pin_and_explicit_rebase():
         login(c); rid=create(c)
         with SessionLocal() as db:
             rev1=db.get(EstimateRevision,rid); old_config=rev1.config_version_id; old_hours=rev1.calculated_hours
-        # Clone active config.
         r=c.post('/data/version/new',follow_redirects=False); assert r.status_code==303
         draft_id=int(r.headers['location'].split('version=')[1])
         with SessionLocal() as db:
@@ -89,7 +87,6 @@ def test_configuration_pin_and_explicit_rebase():
             rev1=db.get(EstimateRevision,rid)
             assert rev1.config_version_id==old_config
             assert rev1.calculated_hours==old_hours
-        # Rebase creates a new revision pinned to the new model.
         r=c.post(f'/estimate/{rid}/new-revision?rebase=true',follow_redirects=False); assert r.status_code==303
         rid2=int(r.headers['location'].rsplit('/',1)[-1])
         with SessionLocal() as db:
@@ -113,7 +110,6 @@ def test_approved_workbook_default_baseline_and_jira_header_shape():
         login(c); rid=create(c)
         with SessionLocal() as db:
             rev=db.get(EstimateRevision,rid)
-            # The approved workbook's cached default result is 2 hours / $500 at $250/hr.
             assert rev.calculated_hours == 2
             assert rev.calculated_fees == 500
         jira=c.get(f'/estimate/{rid}/jira.csv')
@@ -130,7 +126,64 @@ def test_estimate_business_validation_blocks_inconsistent_go_live():
             rev=db.get(EstimateRevision,rid)
             data=estimate_form(rev,db)
         data['go_live_type']='None'
-        # estimate_form selects one application, so a None go-live selection should be rejected.
         r=c.post(f'/estimate/{rid}',data=data)
         assert r.status_code==400
         assert 'Go Live' in r.text or 'go-live' in r.text.lower()
+
+
+def test_deployed_over_change_resets_baseline_applications():
+    with TestClient(app) as c:
+        login(c); rid=create(c)
+        with SessionLocal() as db:
+            rev=db.get(EstimateRevision,rid)
+            data=estimate_form(rev,db)
+        assert c.post(f'/estimate/{rid}',data=data,follow_redirects=False).status_code==303
+        with SessionLocal() as db:
+            rev=db.get(EstimateRevision,rid)
+            assert any(a.config_type != 'No Config' for a in rev.applications)
+            data=estimate_form(rev,db)
+            data['erp']='Oracle Fusion'
+        assert c.post(f'/estimate/{rid}',data=data,follow_redirects=False).status_code==303
+        with SessionLocal() as db:
+            rev=db.get(EstimateRevision,rid)
+            assert rev.erp=='Oracle Fusion'
+            assert rev.applications
+            assert all(a.config_type=='No Config' for a in rev.applications)
+
+
+def test_multi_role_user_email_and_active_management():
+    with TestClient(app) as c:
+        login(c)
+        r=c.post('/admin/users/create',data={
+            'username':'MultiRoleUser','email':'user@example.com','password':'UserPass123!',
+            'active':'on','roles':['ESTIMATOR','REVIEWER']
+        },follow_redirects=False)
+        assert r.status_code==303
+        with SessionLocal() as db:
+            user=db.query(User).filter(User.username_normalized=='multiroleuser').one()
+            uid=user.id
+            assert user.email=='user@example.com'
+            assert set(user.role_names)=={'ESTIMATOR','REVIEWER'}
+            assert user.active is True
+        r=c.post(f'/admin/users/{uid}/update',data={
+            'email':'updated@example.com','roles':['APPROVER','READ_ONLY']
+        },follow_redirects=False)
+        assert r.status_code==303
+        with SessionLocal() as db:
+            user=db.get(User,uid)
+            assert user.email=='updated@example.com'
+            assert set(user.role_names)=={'APPROVER','READ_ONLY'}
+            assert user.active is False
+            assert db.query(AuditEvent).filter(AuditEvent.event_type=='USER_UPDATED').count()>=1
+
+
+def test_user_facing_terminology_is_normalized_without_changing_internal_values():
+    with TestClient(app) as c:
+        login(c); rid=create(c)
+        page=c.get(f'/estimate/{rid}')
+        assert page.status_code==200
+        assert 'SAP ECC 6.0' in page.text
+        assert 'SAP S/4HANA 2022' in page.text
+        assert 'Oracle NetSuite' in page.text
+        assert 'Install Base' in page.text
+        assert 'Baseline Applications:' in page.text
