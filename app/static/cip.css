@@ -1,0 +1,18 @@
+/* v0.3.0 Cloud Inventory Platform integration */
+.product-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1000px;margin:22px auto}
+.product-choice-card{background:#fff;border:1px solid #b9c8ce;border-radius:6px;padding:24px;box-shadow:0 2px 8px #0001;display:grid;gap:10px}
+.product-choice-card h2{margin:0;font-size:21px}.product-choice-card p{color:#66757d;line-height:1.45;min-height:58px}
+.product-choice-code{font-size:12px;font-weight:800;letter-spacing:.08em;color:#067690;background:#e2f2f6;border:1px solid #b7dbe4;border-radius:12px;padding:4px 9px;width:max-content}
+.product-choice-note{max-width:1000px;margin:0 auto;display:flex;gap:12px;align-items:center}
+.product-badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:3px 7px;border-radius:10px;margin:0 5px;border:1px solid transparent}
+.product-mep{background:#e6eef2;color:#3b5360;border-color:#c9d6dc}.product-cip{background:#dff2f6;color:#076b82;border-color:#b7dce5}
+.product-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between}.product-filter,.product-config-tabs{display:flex;gap:6px;align-items:center}
+.product-config-tabs{margin-bottom:10px}
+.cip-app-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cip-custom-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cip-effort-summary,.cip-detail-summary,.calc-summary-card{display:flex;gap:22px;flex-wrap:wrap;padding:10px;margin-top:8px;background:#f4f8fa;border:1px solid #c6d5db}
+.cip-detail-scroll{overflow:auto;max-height:72vh;border:1px solid #9ba7ac;background:#fff}
+.cip-detail-table{min-width:2200px;font-size:11px}.cip-detail-table th{position:sticky;top:0;z-index:5;white-space:nowrap}
+.cip-detail-table input{min-width:90px}.cip-detail-table td:nth-child(2) input{min-width:220px}.cip-detail-table td:last-child input{display:block;min-width:240px;margin-bottom:3px}
+.cip-calc-table{min-width:1450px}.cip-calc-table input{min-width:95px}.cip-calc-table td:nth-child(7) input,.cip-calc-table td:nth-child(8) input{min-width:230px}
+@media(max-width:1100px){.cip-app-grid,.cip-custom-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.product-choice-grid{grid-template-columns:1fr}.cip-app-grid,.cip-custom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.product-toolbar{align-items:stretch;flex-direction:column}}
