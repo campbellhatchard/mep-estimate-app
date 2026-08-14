@@ -41,6 +41,10 @@ def copy_cip_revision(db: Session, core, src: EstimateRevision, user, rebase: bo
             adjustment_notes=row.adjustment_notes, testing_adjustment=row.testing_adjustment,
             testing_notes=row.testing_notes, app_count=row.app_count, integration_added_hours=row.integration_added_hours,
             sort_order=row.sort_order))
+    # SessionLocal deliberately uses autoflush=False. Persist copied scope before the
+    # ensure helpers query for existing keys; otherwise they cannot see the pending
+    # rows and may create duplicate custom/dynamic slots in the same revision.
+    db.flush()
     _ensure_custom_slots(db, rev); _ensure_dynamic_scope(db, rev, inp)
     record(db, event_type="REVISION_CREATED", user_id=user.id, estimate_id=rev.estimate_id, revision_id=rev.id,
         config_version_id=cv.id, old_value=f"Rev {src.revision_no}", new_value=f"Rev {rev.revision_no}",
