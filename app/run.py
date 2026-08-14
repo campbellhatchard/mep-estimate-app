@@ -3,16 +3,18 @@ from __future__ import annotations
 from . import main as core
 from .enhancements import configure_templates, register_routes, clean_schedule_tasks
 from .estimate_numbering import register_numbered_estimate_route
+from .cip import register_cip
 
 app = core.app
+app.title = "Cloud Inventory Services Estimator"
+app.version = "0.3.0"
 
 configure_templates(core.templates)
 register_routes(app)
 register_numbered_estimate_route(app, core)
 
-# Main routes resolve generate_schedule from app.main globals at runtime, so replacing
-# that global lets us normalize user-facing schedule terminology without changing the
-# approved schedule rule source or cell-derived task mapping.
+# Preserve the locked MEP schedule behavior and terminology cleanup. CIP registration
+# receives this exact callable and dispatches only CIP revisions to the CIP schedule generator.
 _original_generate_schedule = core.generate_schedule
 
 
@@ -22,3 +24,4 @@ def _generate_schedule_with_normalized_text(db, rev, replace=True):
 
 
 core.generate_schedule = _generate_schedule_with_normalized_text
+register_cip(app, core, core.generate_schedule)
