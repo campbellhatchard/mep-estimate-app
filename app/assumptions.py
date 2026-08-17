@@ -23,9 +23,6 @@ class EstimateAssumption(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-# SQLAlchemy declarative classes support adding mapped relationships after class declaration.
-# Keeping this shared revision feature outside the MEP-specific model block avoids coupling
-# assumptions to either estimating product.
 if not hasattr(EstimateRevision, "assumptions"):
     EstimateRevision.assumptions = relationship(
         EstimateAssumption,
@@ -39,8 +36,8 @@ def _editable_revision(core, db: Session, request: Request, rid: int):
     user = core.current_user(request, db)
     core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
     rev = core.revision_or_404(db, rid)
-    if rev.status != "DRAFT":
-        raise HTTPException(409, "Assumptions can only be changed while the revision is Draft.")
+    if rev.status in ("APPROVED", "FINAL", "SUPERSEDED"):
+        raise HTTPException(409, "Approved/final/superseded revisions are locked.")
     return user, rev
 
 
