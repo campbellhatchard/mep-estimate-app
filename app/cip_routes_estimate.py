@@ -44,11 +44,13 @@ def register_estimate_routes(app, core, mep_estimate_get, mep_estimate_post, mep
         for field in ["label_sites", "label_count", "custom_boomi_count", "rest_interface_count", "testing_cycles", "go_live_sites", "uat_sites"]:
             _update_cip_field(db, rev, inp, user, field, _int(form, field, getattr(inp, field)))
         _update_cip_field(db, rev, inp, user, "base_test_pct", _float(form, "base_test_pct", inp.base_test_pct))
-        # Low/high factors are presented to the user as percentages (for example 10 and 25)
-        # but retained internally as decimal factors (0.10 and 0.25) for workbook parity.
+        percent_display = str(form.get("range_values_are_percent", "")) == "1"
         for field in ["low_factor", "high_factor"]:
-            displayed_default = getattr(inp, field) * 100
-            _update_cip_field(db, rev, inp, user, field, _float(form, field, displayed_default) / 100.0)
+            default_value = getattr(inp, field) * 100 if percent_display else getattr(inp, field)
+            value = _float(form, field, default_value)
+            if percent_display:
+                value /= 100.0
+            _update_cip_field(db, rev, inp, user, field, value)
         for field in ["gateway", "labels_required", "custom_boomi_required", "rest_required", "consultant_access_setup", "onboarding", "pacejet", "write_test_scripts", "end_user_documentation", "end_user_training", "cip_desktop_dev_training", "mobile_dev_training", "test_ihu", "test_lot_serial", "test_food_pharma", "test_location_dimension", "test_setup_customer_data", "test_monitored_session"]:
             _update_cip_field(db, rev, inp, user, field, _bool(form, field))
         for shared, value in [
