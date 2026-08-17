@@ -1,10 +1,10 @@
 (() => {
   function initCipRangePercentages() {
     const fields = [
-      {name: 'low_factor', max: 100},
-      {name: 'high_factor', max: 200},
+      {name: 'low_factor', max: 100, label: 'Low Factor (%)'},
+      {name: 'high_factor', max: 200, label: 'High Factor (%)'},
     ];
-    fields.forEach(({name, max}) => {
+    fields.forEach(({name, max, label}) => {
       const input = document.querySelector(`input[name="${name}"]`);
       if (!input || input.dataset.percentDisplay === '1') return;
       const raw = Number.parseFloat(input.value);
@@ -13,12 +13,10 @@
       input.min = '0';
       input.max = String(max);
       input.dataset.percentDisplay = '1';
-      input.setAttribute('aria-label', `${name === 'low_factor' ? 'Low' : 'High'} Factor percent`);
-      if (!input.nextElementSibling || !input.nextElementSibling.classList.contains('factor-percent-note')) {
-        const suffix = document.createElement('span');
-        suffix.className = 'factor-percent-note';
-        suffix.textContent = '%';
-        input.insertAdjacentElement('afterend', suffix);
+      input.setAttribute('aria-label', label);
+      const parent = input.parentElement;
+      if (parent && parent.firstChild && parent.firstChild.nodeType === Node.TEXT_NODE) {
+        parent.firstChild.textContent = `${label}:`;
       }
     });
   }
