@@ -1,7 +1,14 @@
 (() => {
   function initAssumptions() {
     const block = document.getElementById('assumptionsBlock');
-    if (!block || block.dataset.readonly === '1') return;
+    if (!block) return;
+
+    const mountTarget = document.getElementById('cip-effort-summary') || document.getElementById('estimate-summary');
+    if (mountTarget) mountTarget.insertAdjacentElement('afterend', block);
+    const detached = document.getElementById('assumptionsDetached');
+    if (detached) detached.remove();
+
+    if (block.dataset.readonly === '1') return;
 
     const rid = block.dataset.revisionId;
     const list = document.getElementById('assumptionsList');
