@@ -1,0 +1,21 @@
+<div class="assumptions-block" id="assumptionsBlock" data-revision-id="{{ rev.id }}" data-readonly="{{ 1 if readonly else 0 }}">
+  <div class="assumptions-toolbar">
+    <div><strong>Assumptions</strong><span class="subtle">Pricing and scope assumptions associated with this estimate revision.</span></div>
+    {% if not readonly %}<button type="button" class="button secondary" id="addAssumptionButton">Add Assumption</button>{% endif %}
+  </div>
+  <div class="assumptions-list" id="assumptionsList">
+    {% for assumption in rev.assumptions %}
+    <div class="assumption-row" data-assumption-id="{{ assumption.id }}">
+      <span class="assumption-number">{{ loop.index }}.</span>
+      {% if readonly %}
+      <div class="assumption-readonly">{{ assumption.text }}</div>
+      {% else %}
+      <textarea class="assumption-textarea" data-assumption-text maxlength="5000" rows="2" placeholder="Enter assumption">{{ assumption.text }}</textarea>
+      <button type="button" class="button small assumption-delete" data-assumption-delete>Delete</button>
+      <span class="assumption-save-status" aria-live="polite"></span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if not rev.assumptions %}<div class="assumptions-empty subtle">No assumptions added.</div>{% endif %}
+  </div>
+</div>
