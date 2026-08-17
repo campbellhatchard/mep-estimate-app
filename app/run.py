@@ -5,10 +5,11 @@ from .enhancements import configure_templates, register_routes, clean_schedule_t
 from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
+from .assumptions import register_assumption_routes
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.0"
+app.version = "0.3.1"
 
 configure_templates(core.templates)
 register_routes(app)
@@ -28,3 +29,4 @@ core.generate_schedule = _generate_schedule_with_normalized_text
 register_cip(app, core, core.generate_schedule)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
+register_assumption_routes(app, core)

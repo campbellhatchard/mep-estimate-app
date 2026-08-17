@@ -6,6 +6,7 @@
   <title>{% block title %}Cloud Inventory Estimator{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
   <link rel="stylesheet" href="/static/cip.css">
+  <link rel="stylesheet" href="/static/assumptions.css">
 </head>
 <body>
 <header class="topbar">
@@ -35,9 +36,12 @@
 </nav>
 {% endif %}
 <main class="page {% block pageclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+{% if rev and active_tab=='estimate' %}<div id="assumptionsDetached" hidden>{% include "_assumptions.html" %}</div>{% endif %}
 <script>
 function filterTable(inputId, tableId){const q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none');}
 function toggleTrace(id){document.getElementById(id).classList.toggle('hidden');}
 </script>
+<script src="/static/assumptions.js"></script>
+<script src="/static/cip_range_percent.js"></script>
 {% block scripts %}{% endblock %}
 </body></html>

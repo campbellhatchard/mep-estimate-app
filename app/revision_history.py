@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from .assumptions import EstimateAssumption
 from .cip_domain import _take_route, revision_product
 from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP
 from .cip_revision import copy_cip_revision
@@ -35,6 +36,17 @@ def _working_revision(db: Session, estimate_id: int, *, exclude_id: int | None =
     if exclude_id is not None:
         query = query.filter(EstimateRevision.id != exclude_id)
     return query.order_by(desc(EstimateRevision.revision_no)).first()
+
+
+def _copy_assumptions(db: Session, src: EstimateRevision, dest: EstimateRevision):
+    for row in db.query(EstimateAssumption).filter(
+        EstimateAssumption.revision_id == src.id
+    ).order_by(EstimateAssumption.sort_order, EstimateAssumption.id).all():
+        db.add(EstimateAssumption(
+            revision_id=dest.id,
+            text=row.text,
+            sort_order=row.sort_order,
+        ))
 
 
 def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: bool):
@@ -85,7 +97,6 @@ def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: b
     if rebase:
         core.append_catalog_entries(db, rev)
 
-    # A new working revision must begin as an exact estimating copy of its source.
     for row in db.query(DetailAdjustment).filter(DetailAdjustment.revision_id == src.id).all():
         line_key = row.line_key
         if line_key.startswith("CUSTOM:"):
@@ -109,6 +120,7 @@ def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: b
             adjust_hours=row.adjust_hours,
             notes=row.notes,
         ))
+    _copy_assumptions(db, src, rev)
 
     record(
         db,
@@ -129,8 +141,6 @@ def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: b
 def _copy_cip_with_adjustments(db: Session, core, src: EstimateRevision, user, rebase: bool):
     rev = copy_cip_revision(db, core, src, user, rebase)
 
-    # CIP scope-level development/testing adjustments are copied by copy_cip_revision.
-    # Carry the phase adjustments and customer non-billable allocations as well.
     for row in db.query(CalculationAdjustment).filter(CalculationAdjustment.revision_id == src.id).all():
         db.add(CalculationAdjustment(
             revision_id=rev.id,
@@ -145,13 +155,13 @@ def _copy_cip_with_adjustments(db: Session, core, src: EstimateRevision, user, r
             hours=row.hours,
             notes=row.notes,
         ))
+    _copy_assumptions(db, src, rev)
     cip_recalculate_and_store(db, rev)
     db.commit()
     return rev
 
 
 def register_revision_history(app, core):
-    # Replace the legacy lifecycle and revision endpoints after MEP/CIP dispatch has been registered.
     _take_route(app, "/estimate/{rid}/status/{action}", "POST")
     _take_route(app, "/estimate/{rid}/new-revision", "POST")
 
@@ -210,7 +220,6 @@ def register_revision_history(app, core):
 
         working = _working_revision(db, src.estimate_id, exclude_id=src.id)
         if working:
-            # Do not create competing Draft/Review branches. Return the user to the active working revision.
             return RedirectResponse(f"/estimate/{working.id}", 303)
 
         if revision_product(db, src) == PRODUCT_CIP:
@@ -246,8 +255,6 @@ def register_revision_history(app, core):
             if latest and latest.id != rev.id:
                 raise HTTPException(409, "Only the latest revision can be approved.")
 
-            # The previous approved revision remains valid through Draft/Review and is superseded
-            # only as part of the atomic approval of this newer revision.
             prior_approved = db.query(EstimateRevision).filter(
                 EstimateRevision.estimate_id == rev.estimate_id,
                 EstimateRevision.id != rev.id,
