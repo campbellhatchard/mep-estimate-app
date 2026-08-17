@@ -6,6 +6,7 @@
   <title>{% block title %}Cloud Inventory Estimator{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
   <link rel="stylesheet" href="/static/cip.css">
+  <link rel="stylesheet" href="/static/assumptions.css">
 </head>
 <body>
 <header class="topbar">
@@ -39,5 +40,6 @@
 function filterTable(inputId, tableId){const q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none');}
 function toggleTrace(id){document.getElementById(id).classList.toggle('hidden');}
 </script>
+<script src="/static/assumptions.js"></script>
 {% block scripts %}{% endblock %}
 </body></html>
