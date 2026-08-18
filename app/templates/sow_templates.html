@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set active_nav='sow_templates' %}
+{% block title %}SOW Templates{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell">
+  <div class="page-title-row"><div><h1>SOW Templates</h1><div class="subtle">Controlled Word templates. Active and Retired versions are immutable; upload wording changes as a new Draft version.</div></div></div>
+  <section class="card">
+    <h2>Upload New MEP New Client Template Version</h2>
+    <form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload">
+      <label>Word Template<input type="file" name="file" accept=".docx" required></label>
+      <label>Change Reason<textarea name="change_reason" rows="3" required></textarea></label>
+      <button class="button primary">Upload Draft Version</button>
+    </form>
+    <p class="subtle">Download an existing controlled template, update wording in Microsoft Word while preserving the bracketed template markers, then upload it as a new version.</p>
+  </section>
+  <section class="card"><h2>MEP New Client SOW Versions</h2>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Version</th><th>Status</th><th>File</th><th>Reason</th><th>Created</th><th>Activated</th><th>Actions</th></tr></thead><tbody>
+      {% for v in versions %}<tr><td>v{{v.version_no}}</td><td>{{v.status}}</td><td>{{v.filename}}</td><td>{{v.change_reason}}</td><td>{{v.created_at.strftime('%Y-%m-%d')}} by {{users.get(v.created_by,'System')}}</td><td>{% if v.activated_at %}{{v.activated_at.strftime('%Y-%m-%d')}} by {{users.get(v.activated_by,'System')}}{% else %}—{% endif %}</td><td><a class="button small secondary" href="/admin/sow-templates/{{v.id}}/download">Download</a>{% if v.status=='DRAFT' %}<form class="inline-form" method="post" action="/admin/sow-templates/{{v.id}}/activate"><button class="button small primary">Activate</button></form>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</div>
+{% endblock %}
