@@ -23,7 +23,7 @@ def create_sow_approver(client):
         'email': 'sow-reviewer@example.com',
         'password': 'ReviewPass123!',
         'active': '1',
-        'roles': ['SOW_APPROVER'],
+        'roles': 'SOW_APPROVER',
     }, follow_redirects=False)
     assert response.status_code == 303
     with SessionLocal() as db:
