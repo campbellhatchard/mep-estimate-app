@@ -61,10 +61,12 @@ def _new_template_row(*, version_no: int, filename: str, content: bytes, reason:
 
 
 def reconcile_controlled_sow_template(db: Session) -> None:
-    """Safely advance an untouched bundled v1 database to the current controlled v3 template.
+    """Install/activate the current controlled v3 without changing historical SOW bindings.
 
-    Historical SOW bindings are never changed. If the active template contains administrator-modified
-    DOCX content, this routine deliberately does nothing and leaves template activation to the admin UI.
+    The production recovery case is intentionally explicit: when the environment only contains
+    template v1, v2/v3 are rebuilt from the bundled controlled source rather than inferred from
+    the stored v1 metadata/content. This prevents legacy database metadata from blocking upgrades.
+    A template version newer than v3 is never superseded automatically.
     """
     _PREVIOUS_SEED(db)
 
@@ -74,35 +76,27 @@ def reconcile_controlled_sow_template(db: Session) -> None:
         .order_by(SOWTemplateVersion.version_no)
         .all()
     )
-    if not rows:
-        return
-
-    active_rows = [row for row in rows if row.status == "ACTIVE"]
-    active = max(active_rows, key=lambda row: row.version_no) if active_rows else None
-    if active and active.version_no > 3:
+    if not rows or any(row.version_no > 3 for row in rows):
         return
 
     bundled_v1 = _bundled_v1_content()
-    v1 = next((row for row in rows if row.version_no == 1), None)
-    if bundled_v1 is None or v1 is None or not _content_matches(v1, bundled_v1):
+    if bundled_v1 is None:
         return
 
-    expected_v2 = sow_layout_v2._build_v2_content(v1.content)
+    # Always build the controlled upgrade from the bundled source. The production v1 row may
+    # contain legacy metadata or a differently packaged DOCX even though it represents the same
+    # original template. Historical SOWs remain pinned to that stored row.
+    expected_v2 = sow_layout_v2._build_v2_content(bundled_v1)
     expected_v3 = sow_layout_v3._build_v3_content(expected_v2)
 
     v2 = next((row for row in rows if row.version_no == 2), None)
     v3 = next((row for row in rows if row.version_no == 3), None)
 
-    # Never overwrite an administrator-created version occupying a controlled version number.
-    # v2/v3 are generated DOCX ZIP packages, so immutable controlled metadata is accepted in
-    # addition to a byte-identical hash match.
+    # If these version numbers already exist and are not our controlled versions, preserve the
+    # administrator-managed versions rather than overwriting them.
     if v2 is not None and not _is_controlled_v2(v2, expected_v2):
         return
     if v3 is not None and not _is_controlled_v3(v3, expected_v3):
-        return
-    if active is not None and active.version_no == 2 and v2 is None:
-        return
-    if active is not None and active.version_no == 3 and v3 is None:
         return
 
     admin = db.query(User).filter(User.username_normalized == "admin").first()
@@ -127,7 +121,7 @@ def reconcile_controlled_sow_template(db: Session) -> None:
             user_id=admin.id,
             field_name=f"SOW_TEMPLATE:{SOW_TEMPLATE_MEP_NET_NEW}:2",
             new_value=v2.filename,
-            reason="Controlled template recovery created historical v2.",
+            reason="Controlled template recovery created historical v2 from bundled source.",
         )
 
     if v3 is None:
@@ -148,7 +142,7 @@ def reconcile_controlled_sow_template(db: Session) -> None:
             user_id=admin.id,
             field_name=f"SOW_TEMPLATE:{SOW_TEMPLATE_MEP_NET_NEW}:3",
             new_value=v3.filename,
-            reason="Controlled template recovery activated current v3.",
+            reason="Controlled template recovery activated current v3 from bundled source.",
         )
     elif v3.status != "ACTIVE":
         old = v3.status
@@ -166,9 +160,8 @@ def reconcile_controlled_sow_template(db: Session) -> None:
             reason="Controlled template recovery activated current v3.",
         )
 
+    # Retire only older template versions. No SOW foreign-key/template binding is modified.
     for row in rows:
-        if row.id == v3.id:
-            continue
         if row.version_no in (1, 2) and row.status == "ACTIVE":
             old = row.status
             row.status = "RETIRED"
@@ -190,4 +183,5 @@ def reconcile_controlled_sow_template(db: Session) -> None:
     db.commit()
 
 
+# Preserve compatibility for callers that still invoke the service seed directly.
 sow_service.seed_initial_sow_template = reconcile_controlled_sow_template
