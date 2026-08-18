@@ -1,4 +1,18 @@
+import os
+from pathlib import Path
+
 import pytest
+
+
+# Establish a deterministic test environment before any application module is imported.
+# Individual tests may still override these values, but isolated test execution must not
+# depend on another test module having run first.
+TEST_DB = Path('/tmp/mep_estimate_pytest.db')
+if TEST_DB.exists():
+    TEST_DB.unlink()
+os.environ['DATABASE_URL'] = f'sqlite:///{TEST_DB}'
+os.environ['SESSION_SECRET'] = 'pytest-secret'
+os.environ['ADMIN_PASSWORD'] = 'TestPass123!'
 
 
 def pytest_collection_modifyitems(config, items):
