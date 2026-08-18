@@ -33,8 +33,10 @@ def _build_v3_content(v2_content: bytes) -> bytes:
     for level in abstract.findall(qn('w:lvl')):
         ilvl = int(level.get(qn('w:ilvl')))
         if ilvl in formats:
-            txt = level.find(qn('w:lvlText')) or OxmlElement('w:lvlText')
-            if txt.getparent() is None: level.append(txt)
+            txt = level.find(qn('w:lvlText'))
+            if txt is None:
+                txt = OxmlElement('w:lvlText')
+                level.append(txt)
             txt.set(qn('w:val'), formats[ilvl])
     for level, name in enumerate(('Heading 1', 'Heading 2', 'Heading 3')):
         style = doc.styles[name]
