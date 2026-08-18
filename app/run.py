@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 from . import main as core
-from .enhancements import configure_templates, register_routes, clean_schedule_tasks
+from .enhancements import configure_templates, register_routes, clean_schedule_tasks, ROLE_LABELS
+from .models import ROLE_ORDER
 from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
 from .assumptions import register_assumption_routes
+from .sow_routes import register_sow
+
+if "SOW_APPROVER" not in ROLE_ORDER:
+    ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
+ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.1"
+app.version = "0.3.2"
 
 configure_templates(core.templates)
 register_routes(app)
@@ -30,3 +36,4 @@ register_cip(app, core, core.generate_schedule)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
 register_assumption_routes(app, core)
+register_sow(app, core)
