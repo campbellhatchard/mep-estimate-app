@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/app.css">
   <link rel="stylesheet" href="/static/cip.css">
   <link rel="stylesheet" href="/static/assumptions.css">
+  <link rel="stylesheet" href="/static/sow.css">
 </head>
 <body>
 <header class="topbar">
@@ -15,7 +16,8 @@
   {% if user %}
   <nav class="global-nav">
     <a href="/estimates">Estimates</a><a href="/data">Calculation Data</a>
-    {% if user.has_role('ADMIN') %}<a href="/admin/users">Users</a>{% endif %}
+    {% if user.has_role('ADMIN','APPROVER','SOW_APPROVER') %}<a href="/approvals">Approvals</a>{% endif %}
+    {% if user.has_role('ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a><a href="/admin/users">Users</a>{% endif %}
   </nav>
   <div class="userbox"><b>{{ user.username }}</b><span>{{ user.role_names|join(' · ') }}</span><form method="post" action="/logout"><button class="link-button">Sign out</button></form></div>
   {% endif %}
@@ -31,6 +33,7 @@
   <a class="{% if active_tab=='detail' %}active{% endif %}" href="/estimate/{{rev.id}}/detail">Estimate Detail</a>
   <a class="{% if active_tab=='calculations' %}active{% endif %}" href="/estimate/{{rev.id}}/calculations">Calculations</a>
   <a class="{% if active_tab=='schedule' %}active{% endif %}" href="/estimate/{{rev.id}}/schedule">Schedule</a>
+  {% if displayed_product=='MEP' %}<a class="{% if active_tab=='sow' %}active{% endif %}" href="/estimate/{{rev.id}}/sow">SOW</a>{% endif %}
   <a class="{% if active_tab=='history' %}active{% endif %}" href="/estimate/{{rev.id}}/revisions">Revision History</a>
   <a class="{% if active_tab=='audit' %}active{% endif %}" href="/estimate/{{rev.id}}/audit">Audit</a>
 </nav>
