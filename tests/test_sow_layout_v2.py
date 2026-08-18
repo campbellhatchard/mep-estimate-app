@@ -33,25 +33,29 @@ def _approved_net_new(client):
     return rid
 
 
-def test_controlled_sow_v2_is_active_and_v1_is_retained():
+def test_controlled_sow_v1_v2_are_retained_and_v3_is_active():
     with TestClient(app):
         with SessionLocal() as db:
             rows = db.query(SOWTemplateVersion).filter(
                 SOWTemplateVersion.template_key == SOW_TEMPLATE_MEP_NET_NEW
             ).order_by(SOWTemplateVersion.version_no).all()
-            assert [r.version_no for r in rows[:2]] == [1, 2]
+            assert [r.version_no for r in rows[:3]] == [1, 2, 3]
             assert rows[0].status == 'RETIRED'
-            assert rows[1].status == 'ACTIVE'
+            assert rows[1].status == 'RETIRED'
             assert rows[1].filename.endswith('Controlled_v2.docx')
+            assert rows[2].status == 'ACTIVE'
+            assert rows[2].filename.endswith('Controlled_v3.docx')
 
 
 def test_v2_template_has_toc_page_rules_headers_footers_and_no_review_yellow():
+    """v2 remains a historical immutable template and keeps its original layout controls."""
     with TestClient(app):
         with SessionLocal() as db:
             tmpl = db.query(SOWTemplateVersion).filter(
                 SOWTemplateVersion.template_key == SOW_TEMPLATE_MEP_NET_NEW,
                 SOWTemplateVersion.version_no == 2,
             ).one()
+            assert tmpl.status == 'RETIRED'
             content = tmpl.content
     doc = Document(io.BytesIO(content))
     assert doc.styles['Heading 1'].paragraph_format.page_break_before is True
@@ -75,7 +79,7 @@ def test_v2_template_has_toc_page_rules_headers_footers_and_no_review_yellow():
     assert '>DRAFT<' not in all_xml
 
 
-def test_generated_v2_preserves_page_and_numpages_fields_while_replacing_estimate_number():
+def test_generated_v3_preserves_page_and_numpages_fields_while_replacing_estimate_number():
     with TestClient(app) as client:
         _login(client)
         rid = _approved_net_new(client)
@@ -83,7 +87,7 @@ def test_generated_v2_preserves_page_and_numpages_fields_while_replacing_estimat
             rev = db.get(EstimateRevision, rid)
             user = db.query(User).filter_by(username_normalized='admin').one()
             sow = create_sow(db, rev, user)
-            assert db.get(SOWTemplateVersion, sow.template_version_id).version_no == 2
+            assert db.get(SOWTemplateVersion, sow.template_version_id).version_no == 3
             data = render_docx(db, sow, rev)
             estimate_number = rev.estimate.estimate_number
 

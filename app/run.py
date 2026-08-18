@@ -7,9 +7,9 @@ from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
 from .assumptions import register_assumption_routes
-# Apply the controlled SOW document-layout renderer and seed before sow_routes
-# imports its service functions.
+# Apply controlled SOW layout migrations before sow_routes imports service callables.
 from . import sow_layout_v2  # noqa: F401
+from . import sow_layout_v3  # noqa: F401
 from .sow_routes import register_sow
 
 if "SOW_APPROVER" not in ROLE_ORDER:
@@ -18,7 +18,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.3"
+app.version = "0.3.4"
 
 configure_templates(core.templates)
 register_routes(app)
