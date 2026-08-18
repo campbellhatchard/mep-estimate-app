@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set active_nav='approvals' %}
+{% block title %}Approvals{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell">
+  <div class="page-title-row"><div><h1>Approvals</h1><div class="subtle">Items requiring your review and action.</div></div></div>
+  {% if user.has_role('ADMIN','APPROVER') %}
+  <section class="card"><h2>Estimate Approvals</h2>
+    {% if estimate_rows %}<div class="table-wrap"><table class="data-table"><thead><tr><th>Estimate</th><th>Revision</th><th>Customer</th><th>Hours</th><th>Fees</th><th>Action</th></tr></thead><tbody>
+    {% for r in estimate_rows %}<tr><td>{{r.estimate.estimate_number}}</td><td>{{r.revision_no}}</td><td>{{r.customer}}</td><td>{{r.calculated_hours}}</td><td>{{r.calculated_fees}}</td><td><a class="button small" href="/estimate/{{r.id}}">Review Estimate</a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="subtle">No estimates are currently awaiting approval.</p>{% endif %}
+  </section>{% endif %}
+
+  {% if user.has_role('SOW_APPROVER') %}
+  <section class="card"><h2>SOW Approvals</h2>
+    {% if sow_rows %}<div class="table-wrap"><table class="data-table"><thead><tr><th>Estimate</th><th>SOW Rev</th><th>Customer</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
+    {% for row in sow_rows %}{% set s=row.sow %}{% set r=row.rev %}<tr><td>{{r.estimate.estimate_number if r else '—'}}</td><td>{{s.sow_revision_no}}</td><td>{{r.customer if r else '—'}}</td><td>{{s.submitted_at.strftime('%Y-%m-%d %H:%M') if s.submitted_at else '—'}}</td><td><a class="button small primary" href="/sow/{{s.id}}">Review SOW</a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="subtle">No SOWs are currently assigned to you for approval.</p>{% endif %}
+  </section>{% endif %}
+
+  {% if not user.has_role('ADMIN','APPROVER','SOW_APPROVER') %}<section class="card"><p>You do not currently hold an approval role.</p></section>{% endif %}
+</div>
+{% endblock %}
