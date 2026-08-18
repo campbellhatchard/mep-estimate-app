@@ -8,6 +8,7 @@ from app.run import app
 from app.database import SessionLocal
 from app.sow_models import SOWTemplateVersion, SOW_TEMPLATE_MEP_NET_NEW
 from app.sow_layout_v3 import V3_FILENAME
+from app.sow_pdf_v3 import _review_pdf
 
 
 def test_controlled_sow_v3_is_active_and_uses_required_heading_numbering():
@@ -48,3 +49,7 @@ def test_controlled_sow_v3_is_active_and_uses_required_heading_numbering():
     for paragraph in doc.paragraphs:
         if paragraph.style and paragraph.style.name in ('Heading 1', 'Heading 2', 'Heading 3'):
             assert paragraph._p.pPr is None or paragraph._p.pPr.find(qn('w:numPr')) is None
+
+    pdf = _review_pdf(content, 'Layout Test Customer', '202608999', 'August 18, 2026')
+    assert pdf.startswith(b'%PDF')
+    assert len(pdf) > 10_000
