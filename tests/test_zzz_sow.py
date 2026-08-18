@@ -135,7 +135,10 @@ def test_sow_workflow_role_queue_rejection_revision_and_approval_lock():
         doc = Document(BytesIO(docx.content))
         text = '\n'.join(p.text for p in doc.paragraphs)
         assert 'Acme Distribution' in text
-        assert '4.14 Project Specific Assumptions' not in text
+        assert 'Project Specific Assumptions' not in text
+        assert '[[ASSUMPTIONS]]' not in text
+        assert '[[IF:ASSUMPTIONS]]' not in text
+        assert '[[END:ASSUMPTIONS]]' not in text
         assert 'Nextworld EAP Platform Administrator' not in text
         assert 'monthly basis' in text.lower()
 
@@ -163,5 +166,10 @@ def test_estimate_assumptions_feed_sow_section_414():
             docx_content = render_docx(db, sow, db.get(EstimateRevision, rid))
         doc = Document(BytesIO(docx_content))
         text = '\n'.join(p.text for p in doc.paragraphs)
-        assert '4.14 Project Specific Assumptions' in text
+        # Word numbering supplies the visible "4.14" prefix; python-docx paragraph text
+        # contains only the heading itself. Validate the substantive section and content.
+        assert 'Project Specific Assumptions' in text
         assert 'Customer will provide validated production-like test data before UAT.' in text
+        assert '[[ASSUMPTIONS]]' not in text
+        assert '[[IF:ASSUMPTIONS]]' not in text
+        assert '[[END:ASSUMPTIONS]]' not in text
