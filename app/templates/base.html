@@ -3,24 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}MEP Estimate{% endblock %}</title>
+  <title>{% block title %}Cloud Inventory Estimator{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/cip.css">
+  <link rel="stylesheet" href="/static/assumptions.css">
+  <link rel="stylesheet" href="/static/sow.css">
 </head>
 <body>
 <header class="topbar">
   <a class="brand-logo-link" href="/estimates" aria-label="Cloud Inventory home"><img class="brand-logo" src="/static/ci-logo-full.webp" alt="Cloud Inventory"></a>
-  <div class="product-name">MEP Estimate</div>
+  <div class="product-name">Services Estimator</div>
   {% if user %}
   <nav class="global-nav">
     <a href="/estimates">Estimates</a><a href="/data">Calculation Data</a>
-    {% if user.has_role('ADMIN') %}<a href="/admin/users">Users</a>{% endif %}
+    {% if user.has_role('ADMIN','APPROVER','SOW_APPROVER') %}<a href="/approvals">Approvals</a>{% endif %}
+    {% if user.has_role('ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a><a href="/admin/users">Users</a>{% endif %}
   </nav>
   <div class="userbox"><b>{{ user.username }}</b><span>{{ user.role_names|join(' · ') }}</span><form method="post" action="/logout"><button class="link-button">Sign out</button></form></div>
   {% endif %}
 </header>
 {% if rev %}
+{% set displayed_product = 'CIP' if rev.engine_version and rev.engine_version.startswith('CIP-') else 'MEP' %}
 <div class="estimate-head">
-  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="muted">Revision {{ rev.revision_no }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
+  <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }} of {{ estimate.revisions|length }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
   <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
 </div>
 <nav class="tabs">
@@ -28,13 +33,18 @@
   <a class="{% if active_tab=='detail' %}active{% endif %}" href="/estimate/{{rev.id}}/detail">Estimate Detail</a>
   <a class="{% if active_tab=='calculations' %}active{% endif %}" href="/estimate/{{rev.id}}/calculations">Calculations</a>
   <a class="{% if active_tab=='schedule' %}active{% endif %}" href="/estimate/{{rev.id}}/schedule">Schedule</a>
+  {% if displayed_product=='MEP' %}<a class="{% if active_tab=='sow' %}active{% endif %}" href="/estimate/{{rev.id}}/sow">SOW</a>{% endif %}
+  <a class="{% if active_tab=='history' %}active{% endif %}" href="/estimate/{{rev.id}}/revisions">Revision History</a>
   <a class="{% if active_tab=='audit' %}active{% endif %}" href="/estimate/{{rev.id}}/audit">Audit</a>
 </nav>
 {% endif %}
 <main class="page {% block pageclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+{% if rev and active_tab=='estimate' %}<div id="assumptionsDetached" hidden>{% include "_assumptions.html" %}</div>{% endif %}
 <script>
 function filterTable(inputId, tableId){const q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none');}
 function toggleTrace(id){document.getElementById(id).classList.toggle('hidden');}
 </script>
+<script src="/static/assumptions.js"></script>
+<script src="/static/cip_range_percent.js"></script>
 {% block scripts %}{% endblock %}
 </body></html>

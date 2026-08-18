@@ -4,9 +4,10 @@ from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
 from .models import User, UserRole, ConfigurationVersion, ConfigItem
-from .auth import normalize_username, hash_password
+from .auth import normalize_username, hash_password, verify_password
 
 SEED_PATH = Path(__file__).parent / "seed" / "approved_model_2026_08_1.json"
+BOOTSTRAP_DEFAULT_PASSWORD = "ChangeMe123!"
 
 def slug(value: str) -> str:
     return re.sub(r"[^A-Z0-9]+", "_", value.upper()).strip("_") or "BLANK"
@@ -20,11 +21,18 @@ def add_item(db: Session, version_id: int, category: str, key: str, label: str, 
                       sort_order=sort_order, active=active))
 
 def seed_database(db: Session):
+    configured_password = (os.getenv("ADMIN_PASSWORD") or "").strip()
     admin = db.query(User).filter(User.username_normalized == "admin").first()
     if not admin:
-        password = os.getenv("ADMIN_PASSWORD", "ChangeMe123!")
+        password = configured_password or BOOTSTRAP_DEFAULT_PASSWORD
         admin = User(username="Admin", username_normalized="admin", password_hash=hash_password(password), role="ADMIN", active=True)
         db.add(admin); db.flush()
+    elif configured_password and verify_password(BOOTSTRAP_DEFAULT_PASSWORD, admin.password_hash):
+        # One-time bootstrap upgrade: if staging/production was initially created without
+        # ADMIN_PASSWORD and still uses the known bootstrap default, adopt the configured
+        # environment password. Deliberately changed Admin passwords are never overwritten.
+        admin.password_hash = hash_password(configured_password)
+        db.flush()
     if not db.query(UserRole).filter(UserRole.user_id == admin.id, UserRole.role == "ADMIN").first():
         db.add(UserRole(user_id=admin.id, role="ADMIN"))
         db.flush()

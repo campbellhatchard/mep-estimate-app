@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}New Estimate{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row"><div><h1>New Estimate</h1><div class="subtle">Select the product being estimated. The product type is permanent once the estimate is created.</div></div></div>
+  <div class="product-choice-grid">
+    <form method="post" action="/estimates/new" class="product-choice-card"><input type="hidden" name="product_type" value="MEP"><div class="product-choice-code">MEP</div><h2>Mobile Enterprise Platform</h2><p>Estimate application and services delivery on the Mobile Enterprise Platform using the approved MEP calculation model.</p><button class="primary wide" type="submit">Create MEP Estimate</button></form>
+    <form method="post" action="/estimates/new" class="product-choice-card"><input type="hidden" name="product_type" value="CIP"><div class="product-choice-code">CIP</div><h2>Cloud Inventory Platform</h2><p>Estimate Cloud Inventory Platform implementation or change services using the independent CIP calculation and testing model.</p><button class="primary wide" type="submit">Create CIP Estimate</button></form>
+  </div>
+  <div class="card product-choice-note"><strong>Estimate numbering</strong><span>MEP and CIP share the same YYYYMMNNN sequence. The number is allocated only after a product is selected.</span></div>
+</div>
+{% endblock %}

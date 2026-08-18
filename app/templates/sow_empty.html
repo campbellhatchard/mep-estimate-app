@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% set active_tab='sow' %}
+{% block title %}SOW{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell">
+  <section class="card">
+    <h1>Statement of Work</h1>
+    {% if eligible %}
+      <p>This approved Net New MEP estimate is eligible for the MEP New Client Statement of Work.</p>
+      {% if user.has_role('ADMIN','ESTIMATOR','REVIEWER','APPROVER') %}
+      <form method="post" action="/estimate/{{rev.id}}/sow/create"><button class="button primary">Prepare SOW</button></form>
+      {% endif %}
+    {% else %}
+      <p class="subtle">The MEP New Client SOW is available only for an Approved Net New MEP estimate revision. A separate Small Project template will be added for Install Base estimates.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

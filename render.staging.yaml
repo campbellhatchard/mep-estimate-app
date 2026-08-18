@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: mep-estimate-app-staging
+    runtime: python
+    plan: starter
+    region: ohio
+    branch: work/v0.3.0-cip-build
+    autoDeployTrigger: commit
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: alembic upgrade head
+    startCommand: uvicorn app.run:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mep-estimate-db-staging
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      # Required bootstrap secret. Enter ADMIN_PASSWORD manually in the Render
+      # staging service Environment settings if the Blueprint UI does not prompt.
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ENVIRONMENT
+        value: staging
+      - key: APP_TIMEZONE
+        value: America/Chicago
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+databases:
+  - name: mep-estimate-db-staging
+    plan: basic-256mb
+    region: ohio
+    postgresMajorVersion: "18"

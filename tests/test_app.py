@@ -87,6 +87,9 @@ def test_configuration_pin_and_explicit_rebase():
             rev1=db.get(EstimateRevision,rid)
             assert rev1.config_version_id==old_config
             assert rev1.calculated_hours==old_hours
+        # A new revision is created only from a locked historical revision.
+        assert c.post(f'/estimate/{rid}/status/submit',follow_redirects=False).status_code==303
+        assert c.post(f'/estimate/{rid}/status/approve',follow_redirects=False).status_code==303
         r=c.post(f'/estimate/{rid}/new-revision?rebase=true',follow_redirects=False); assert r.status_code==303
         rid2=int(r.headers['location'].rsplit('/',1)[-1])
         with SessionLocal() as db:
