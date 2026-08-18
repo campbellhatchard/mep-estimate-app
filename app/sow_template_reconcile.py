@@ -27,6 +27,20 @@ def _content_matches(row: SOWTemplateVersion, content: bytes) -> bool:
     return row.content_sha256 == expected or row.content == content
 
 
+def _is_controlled_v2(row: SOWTemplateVersion, expected_content: bytes) -> bool:
+    return (
+        _content_matches(row, expected_content)
+        or (row.filename == sow_layout_v2.V2_FILENAME and row.change_reason == sow_layout_v2.V2_REASON)
+    )
+
+
+def _is_controlled_v3(row: SOWTemplateVersion, expected_content: bytes) -> bool:
+    return (
+        _content_matches(row, expected_content)
+        or (row.filename == sow_layout_v3.V3_FILENAME and row.change_reason == sow_layout_v3.V3_REASON)
+    )
+
+
 def _new_template_row(*, version_no: int, filename: str, content: bytes, reason: str, admin: User,
                       status: str, activated_at=None) -> SOWTemplateVersion:
     return SOWTemplateVersion(
@@ -80,9 +94,11 @@ def reconcile_controlled_sow_template(db: Session) -> None:
     v3 = next((row for row in rows if row.version_no == 3), None)
 
     # Never overwrite an administrator-created version occupying a controlled version number.
-    if v2 is not None and not _content_matches(v2, expected_v2):
+    # v2/v3 are generated DOCX ZIP packages, so immutable controlled metadata is accepted in
+    # addition to a byte-identical hash match.
+    if v2 is not None and not _is_controlled_v2(v2, expected_v2):
         return
-    if v3 is not None and not _content_matches(v3, expected_v3):
+    if v3 is not None and not _is_controlled_v3(v3, expected_v3):
         return
     if active is not None and active.version_no == 2 and v2 is None:
         return
@@ -167,7 +183,6 @@ def reconcile_controlled_sow_template(db: Session) -> None:
                 reason="Superseded by current controlled SOW template v3.",
             )
 
-    # If v2 existed but was still Active while v3 is now Active, retire it explicitly.
     if v2.status == "ACTIVE":
         v2.status = "RETIRED"
         v2.retired_at = now
