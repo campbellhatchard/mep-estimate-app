@@ -12,16 +12,16 @@
  <div class="detail-section-title">{{section|ci_text}}</div>
  <div class="table-wrap"><table class="detail-table"><thead><tr><th>Ref</th><th>Definition</th><th>Base Hours</th><th>Mod Hours</th><th>Dev Subtotal</th><th>Unit Testing</th><th>Notes</th><th>Total</th><th>Validation</th></tr></thead><tbody>
  {% for line in lines %}
- <tr class="{% if line.total==0 %}zero-row{% endif %}">
+ <tr data-detail-line data-line-key="{{line.key}}" data-base-hours="{{line.base_hours}}" class="{% if line.total==0 %}zero-row{% endif %}">
   <td>{{line.ref}}</td>
   <td>{% if section in ['Labels','IoT Service Definitions','ERP Service Definitions','Data Replication Sessions'] %}<input name="description_{{ns.i}}" value="{{line.definition|ci_term}}" placeholder="Description required" {% if readonly %}disabled{% endif %}>{% else %}<input name="description_{{ns.i}}" value="{{line.definition|ci_term}}" readonly class="readonly-cell">{% endif %}</td>
-  <td class="num calculated">{{'%.1f'|format(line.base_hours)}}</td>
+  <td class="num calculated base-hours">{{'%.1f'|format(line.base_hours)}}</td>
   <td><input class="num adjust-input" type="number" step="0.5" name="mod_{{ns.i}}" value="{{line.mod_hours}}" {% if readonly %}disabled{% endif %}></td>
-  <td class="num calculated">{{'%.1f'|format(line.dev_subtotal)}}</td><td class="num calculated">{{'%.1f'|format(line.unit_testing)}}</td>
-  <td><input name="notes_{{ns.i}}" value="{{line.notes}}" placeholder="Required for non-zero adjustment" {% if readonly %}disabled{% endif %}></td><td class="num total-cell">{{'%.1f'|format(line.total)}}</td><td class="validation">{{line.error|ci_text}}</td>
+  <td class="num calculated dev-subtotal">{{'%.1f'|format(line.dev_subtotal)}}</td><td class="num calculated unit-testing">{{'%.1f'|format(line.unit_testing)}}</td>
+  <td><input name="notes_{{ns.i}}" value="{{line.notes}}" placeholder="Required for non-zero adjustment" {% if readonly %}disabled{% endif %}></td><td class="num total-cell line-total">{{'%.1f'|format(line.total)}}</td><td class="validation line-validation">{{line.error|ci_text}}</td>
   <input type="hidden" name="line_key_{{ns.i}}" value="{{line.key}}">
  </tr>{% set ns.i=ns.i+1 %}{% endfor %}
- <tr class="summary-row"><td></td><td><b>Section Total{% if s.count is defined %} ({{s.count}} configured){% endif %}</b></td><td>{{'%.1f'|format(s.base or 0)}}</td><td>{{'%.1f'|format(s.mod or 0)}}</td><td>{{'%.1f'|format(s.dev or 0)}}</td><td>{{'%.1f'|format(s.unit or 0)}}</td><td></td><td>{{'%.1f'|format(s.total or 0)}}</td><td></td></tr>
+ <tr class="summary-row" data-detail-section="{{section}}"><td></td><td><b>Section Total{% if s.count is defined %} ({{s.count}} configured){% endif %}</b></td><td class="section-base">{{'%.1f'|format(s.base or 0)}}</td><td class="section-mod">{{'%.1f'|format(s.mod or 0)}}</td><td class="section-dev">{{'%.1f'|format(s.dev or 0)}}</td><td class="section-unit">{{'%.1f'|format(s.unit or 0)}}</td><td></td><td class="section-total">{{'%.1f'|format(s.total or 0)}}</td><td></td></tr>
  </tbody></table></div>
 </div>
 {% endfor %}
