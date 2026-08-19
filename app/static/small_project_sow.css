@@ -1,0 +1,7 @@
+.small-project-sow .deliverable-card{border:1px solid #d5dfe3;border-radius:6px;padding:14px;margin:12px 0;background:#fff}
+.small-project-sow .deliverable-card label{display:block;margin:8px 0}
+.small-project-sow .deliverable-card input[type=text],.small-project-sow .deliverable-card input:not([type]),.small-project-sow .deliverable-card textarea{width:100%}
+.small-project-sow .methodology-grid{display:grid;gap:8px;margin-top:12px}
+.small-project-sow .methodology-row{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:16px;align-items:center;border-bottom:1px solid #e2e8eb;padding:9px 0}
+.small-project-sow .conditional-options{margin-top:14px}
+@media(max-width:760px){.small-project-sow .methodology-row{grid-template-columns:1fr}.small-project-sow .methodology-row select{width:100%}}
