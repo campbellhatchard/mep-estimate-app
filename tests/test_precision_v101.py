@@ -19,6 +19,12 @@ def create_revision(client):
     return int(response.headers['location'].rsplit('/', 1)[-1])
 
 
+def create_cip_revision(client):
+    response = client.post('/estimates/new', data={'product_type': 'CIP'}, follow_redirects=False)
+    assert response.status_code == 303
+    return int(response.headers['location'].rsplit('/', 1)[-1])
+
+
 def test_mep_standard_adjust_preserves_half_hour_precision():
     with TestClient(app) as client:
         login(client)
@@ -78,6 +84,24 @@ def test_calculation_preview_updates_without_saving():
         assert row['extended'] == 8.5
         with SessionLocal() as db:
             assert db.query(CalculationAdjustment).filter_by(revision_id=rid, line_key='PLAN_ADW').count() == 0
+
+
+def test_cip_project_management_adjustment_is_added_after_formula_rounding():
+    with TestClient(app) as client:
+        login(client)
+        rid = create_cip_revision(client)
+        base = client.post(f'/estimate/{rid}/calculations/preview', data={
+            'line_count': '1', 'line_key_0': 'PLAN_PM', 'phase_0': 'Plan', 'adjust_0': '0'
+        })
+        adjusted = client.post(f'/estimate/{rid}/calculations/preview', data={
+            'line_count': '1', 'line_key_0': 'PLAN_PM', 'phase_0': 'Plan', 'adjust_0': '0.5'
+        })
+        assert base.status_code == adjusted.status_code == 200
+        base_row = next(item for item in base.json()['rows'] if item['key'] == 'PLAN_PM')
+        adjusted_row = next(item for item in adjusted.json()['rows'] if item['key'] == 'PLAN_PM')
+        assert adjusted_row['investment'] == base_row['investment'] + 0.5
+        with SessionLocal() as db:
+            assert db.query(CalculationAdjustment).filter_by(revision_id=rid, line_key='PLAN_PM').count() == 0
 
 
 def test_hour_display_uses_only_required_decimal_places():
