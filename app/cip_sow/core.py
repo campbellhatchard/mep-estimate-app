@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import base64
 import io
 from datetime import date, datetime
-from pathlib import Path
-
 from docx import Document
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -16,10 +13,9 @@ from ..services.audit import record
 from ..services.cip_calculation import calculation as cip_calculation
 from ..sow_models import SOW, SOWHypercareLocation, SOWTemplateVersion
 from .. import sow_service
+from .template import build_cip_template
 
 SOW_TEMPLATE_CIP_NET_NEW = "CIP_NET_NEW"
-CIP_TEMPLATE_DIR = Path(__file__).parent / "sow_templates"
-CIP_TEMPLATE_PART_GLOB = "cip_new_client_v1.b64.part*"
 CIP_TEMPLATE_FILENAME = "CIP_Template_NewClient_2026_13_Controlled_v1.docx"
 CIP_TEMPLATE_LABEL = "CIP New Client SOW"
 CURRENT_VERSION_CATEGORY = "CIP SOW Setting"
@@ -77,17 +73,6 @@ def validate_template_for_key(content: bytes, template_key: str) -> list[str]:
     return sow_service.validate_template(content)
 
 
-def _bundled_cip_template() -> bytes | None:
-    parts = sorted(CIP_TEMPLATE_DIR.glob(CIP_TEMPLATE_PART_GLOB))
-    if not parts:
-        return None
-    encoded = "".join(part.read_text() for part in parts)
-    try:
-        return base64.b64decode(encoded.strip())
-    except Exception as exc:
-        raise RuntimeError("Bundled CIP SOW template is not valid base64.") from exc
-
-
 def ensure_cip_sow_data_settings(db: Session) -> None:
     versions = (
         db.query(ConfigurationVersion)
@@ -129,9 +114,7 @@ def seed_cip_sow_template(db: Session) -> None:
         SOWTemplateVersion.template_key == SOW_TEMPLATE_CIP_NET_NEW
     ).count():
         return
-    content = _bundled_cip_template()
-    if not content:
-        return
+    content = build_cip_template(db)
     missing = validate_cip_template(content)
     if missing:
         raise RuntimeError("Bundled CIP SOW template is missing markers: " + ", ".join(missing))
