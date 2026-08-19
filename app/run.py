@@ -13,6 +13,7 @@ from . import sow_layout_v3  # noqa: F401
 from . import sow_template_reconcile  # noqa: F401
 from .sow_template_startup import register_sow_template_reconciliation
 from .sow_routes import register_sow
+from .cip_sow import register_cip_sow
 
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
@@ -20,7 +21,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.6"
+app.version = "0.3.7"
 
 configure_templates(core.templates)
 register_routes(app)
@@ -41,7 +42,10 @@ register_cip(app, core, core.generate_schedule)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
 register_assumption_routes(app, core)
-# Explicitly reconcile the controlled SOW templates at process startup. register_sow also
+# Explicitly reconcile the controlled MEP SOW templates at process startup. register_sow also
 # retains its existing seed hook; this direct registration removes any import-binding ambiguity.
 register_sow_template_reconciliation(app)
 register_sow(app, core)
+# CIP SOW is layered after the accepted MEP SOW so shared workflow routes remain unchanged
+# and only product-specific SOW entry/render/finalization behavior is dispatched for CIP.
+register_cip_sow(app, core)

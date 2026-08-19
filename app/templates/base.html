@@ -51,7 +51,7 @@
   <a class="{% if active_tab=='detail' %}active{% endif %}" href="/estimate/{{rev.id}}/detail">Estimate Detail</a>
   <a class="{% if active_tab=='calculations' %}active{% endif %}" href="/estimate/{{rev.id}}/calculations">Calculations</a>
   <a class="{% if active_tab=='schedule' %}active{% endif %}" href="/estimate/{{rev.id}}/schedule">Schedule</a>
-  {% if displayed_product=='MEP' %}<a class="{% if active_tab=='sow' %}active{% endif %}" href="/estimate/{{rev.id}}/sow">SOW</a>{% endif %}
+  <a class="{% if active_tab=='sow' %}active{% endif %}" href="/estimate/{{rev.id}}/sow">SOW</a>
   <a class="{% if active_tab=='history' %}active{% endif %}" href="/estimate/{{rev.id}}/revisions">Revision History</a>
   <a class="{% if active_tab=='audit' %}active{% endif %}" href="/estimate/{{rev.id}}/audit">Audit</a>
 </nav>

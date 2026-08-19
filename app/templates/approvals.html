@@ -13,8 +13,8 @@
 
   {% if user.has_role('SOW_APPROVER') %}
   <section class="card"><h2>SOW Approvals</h2>
-    {% if sow_rows %}<div class="table-wrap"><table class="data-table"><thead><tr><th>Estimate</th><th>SOW Rev</th><th>Customer</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
-    {% for row in sow_rows %}{% set s=row.sow %}{% set r=row.rev %}<tr><td>{{r.estimate.estimate_number if r else '—'}}</td><td>{{s.sow_revision_no}}</td><td>{{r.customer if r else '—'}}</td><td>{{s.submitted_at.strftime('%Y-%m-%d %H:%M') if s.submitted_at else '—'}}</td><td><a class="button small primary" href="/sow/{{s.id}}">Review SOW</a></td></tr>{% endfor %}
+    {% if sow_rows %}<div class="table-wrap"><table class="data-table"><thead><tr><th>Product</th><th>Estimate</th><th>SOW Rev</th><th>Customer</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
+    {% for row in sow_rows %}{% set s=row.sow %}{% set r=row.rev %}<tr><td>{{s.template_version.product_type}}</td><td>{{r.estimate.estimate_number if r else '—'}}</td><td>{{s.sow_revision_no}}</td><td>{{r.customer if r else '—'}}</td><td>{{s.submitted_at.strftime('%Y-%m-%d %H:%M') if s.submitted_at else '—'}}</td><td><a class="button small primary" href="/sow/{{s.id}}">Review SOW</a></td></tr>{% endfor %}
     </tbody></table></div>{% else %}<p class="subtle">No SOWs are currently assigned to you for approval.</p>{% endif %}
   </section>{% endif %}
 
