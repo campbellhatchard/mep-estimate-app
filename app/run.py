@@ -14,6 +14,7 @@ from . import sow_template_reconcile  # noqa: F401
 from .sow_template_startup import register_sow_template_reconciliation
 from .sow_routes import register_sow
 from .cip_sow import register_cip_sow
+from .sow_signature_runtime import install_sow_signature_layout
 
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
@@ -21,7 +22,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.7"
+app.version = "0.3.8"
 
 configure_templates(core.templates)
 register_routes(app)
@@ -42,6 +43,9 @@ register_cip(app, core, core.generate_schedule)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
 register_assumption_routes(app, core)
+# Install the source-template two-column signature layout before SOW routes are registered.
+# This affects both review PDFs and generated Word documents without changing commercial content.
+install_sow_signature_layout()
 # Explicitly reconcile the controlled MEP SOW templates at process startup. register_sow also
 # retains its existing seed hook; this direct registration removes any import-binding ambiguity.
 register_sow_template_reconciliation(app)
