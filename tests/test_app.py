@@ -108,13 +108,15 @@ def test_approved_revision_is_locked():
         assert r.status_code==409
 
 
-def test_approved_workbook_default_baseline_and_jira_header_shape():
+def test_default_mep_cloud_baseline_and_jira_header_shape():
     with TestClient(app) as c:
         login(c); rid=create(c)
         with SessionLocal() as db:
             rev=db.get(EstimateRevision,rid)
-            assert rev.calculated_hours == 2
-            assert rev.calculated_fees == 500
+            assert rev.customer_type == 'Net_New'
+            assert rev.project_type == 'MEP Cloud'
+            assert rev.calculated_hours == 57
+            assert rev.calculated_fees == rev.calculated_hours * rev.billing_rate
         jira=c.get(f'/estimate/{rid}/jira.csv')
         assert jira.status_code==200
         rows=list(__import__('csv').reader(jira.text.splitlines()))
