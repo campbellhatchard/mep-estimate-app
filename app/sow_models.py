@@ -101,3 +101,15 @@ class SOWDevice(Base):
     make_model: Mapped[str] = mapped_column(String(240), default="")
     os_version: Mapped[str] = mapped_column(String(160), default="")
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SmallProjectSOWConfig(Base):
+    __tablename__ = "small_project_sow_configs"
+
+    sow_id: Mapped[int] = mapped_column(ForeignKey("sows.id", ondelete="CASCADE"), primary_key=True)
+    contracting_entity: Mapped[str] = mapped_column(String(240), default="")
+    mep_install_mode: Mapped[str] = mapped_column(String(30), default="")
+    epp_deployment_model: Mapped[str] = mapped_column(String(30), default="")
+    key_user_count: Mapped[int] = mapped_column(Integer, default=2)
+    deliverables_json: Mapped[str] = mapped_column(Text, default="[]")
+    methodology_json: Mapped[str] = mapped_column(Text, default="[]")
