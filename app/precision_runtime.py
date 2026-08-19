@@ -202,7 +202,15 @@ def register_precision_routes(app, core):
             table = Table(data, colWidths=[180, 80, 120, 120]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0089a8")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white)]))
             story += [table, Spacer(1, 14), Paragraph("Phase Summary", styles["Heading2"])]
             pdata = [["Phase", "Hours"]] + [[phase, format_hours(value["extended"])] for phase, value in summary["phase_totals"].items()]
-            table = Table(pdata, colWidths=[300, 100]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey)])); story.append(table)
+            table = Table(pdata, colWidths=[300, 100]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey)])); story += [table, Spacer(1, 14)]
+            selected = [a for a in rev.applications if a.config_type != "No Config"]
+            if selected:
+                story.append(Paragraph("Selected Applications / Packages", styles["Heading2"]))
+                app_data = [["Type", "Definition", "Configuration"]] + [[a.kind.title(), a.label, a.config_type] for a in selected]
+                app_table = Table(app_data, colWidths=[80, 300, 100]); app_table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#d9edf7"))]))
+                story += [app_table, Spacer(1, 12)]
+            story.append(Paragraph("Assumptions", styles["Heading2"]))
+            story.append(Paragraph(f"This estimate uses configuration {db.get(ConfigurationVersion, rev.config_version_id).name} and calculation engine {rev.engine_version}. Manual adjustments are retained in the application audit history.", styles["BodyText"]))
         else:
             _, summary, _, _ = cip_calculation(db, rev)
             from .cip_domain import _cip_input
