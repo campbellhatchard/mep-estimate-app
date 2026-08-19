@@ -7,6 +7,7 @@ from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
 from .assumptions import register_assumption_routes
+from .precision_runtime import install_calculation_precision, register_precision_routes, register_precision_startup
 # Apply controlled SOW layout migrations before SOW registration.
 from . import sow_layout_v2  # noqa: F401
 from . import sow_layout_v3  # noqa: F401
@@ -22,9 +23,12 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.8"
+app.version = "0.3.9"
 
 configure_templates(core.templates)
+# Replace calculation references before any product routes capture them. Locked revisions
+# continue to dispatch to their historical engine; editable/new revisions use v1.0.1.
+install_calculation_precision(core)
 register_routes(app)
 register_numbered_estimate_route(app, core)
 
@@ -40,6 +44,11 @@ def _generate_schedule_with_normalized_text(db, rev, replace=True):
 
 core.generate_schedule = _generate_schedule_with_normalized_text
 register_cip(app, core, core.generate_schedule)
+# Product dispatch now exists; add calculation preview and replace PDF export with the
+# precision-consistent implementation. Register editable-revision recalculation after the
+# CIP seed startup handler so both configuration models are available first.
+register_precision_routes(app, core)
+register_precision_startup(app)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
 register_assumption_routes(app, core)
