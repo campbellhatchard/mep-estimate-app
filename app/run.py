@@ -16,6 +16,8 @@ from .sow_template_startup import register_sow_template_reconciliation
 from .sow_routes import register_sow
 from .cip_sow import register_cip_sow
 from .sow_signature_runtime import install_sow_signature_layout
+from .small_project_template_assets import materialize_small_project_template_assets
+from .small_project_sow import register_small_project_sow
 
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
@@ -26,6 +28,9 @@ app.title = "Cloud Inventory Services Estimator"
 app.version = "0.3.9"
 
 configure_templates(core.templates)
+# Reconstruct the controlled Small Project DOCX source templates from repository text assets
+# before startup handlers seed them into the database.
+materialize_small_project_template_assets()
 # Replace calculation references before any product routes capture them. Locked revisions
 # continue to dispatch to their historical engine; editable/new revisions use v1.0.1.
 install_calculation_precision(core)
@@ -62,3 +67,6 @@ register_sow(app, core)
 # CIP SOW is layered after the accepted MEP SOW so shared workflow routes remain unchanged
 # and only product-specific SOW entry/render/finalization behavior is dispatched for CIP.
 register_cip_sow(app, core)
+# Small Project SOW is the final dispatch layer. It activates only for approved Install Base
+# revisions with Project Type = Small Project; all Net New routes are delegated unchanged.
+register_small_project_sow(app, core)
