@@ -1,4 +1,14 @@
 (() => {
+  const billingRate = document.querySelector('input[name="billing_rate"]');
+  if (billingRate) {
+    const formatBillingRate = () => {
+      const value = Number(billingRate.value);
+      if (Number.isFinite(value)) billingRate.value = value.toFixed(2);
+    };
+    formatBillingRate();
+    billingRate.addEventListener('blur', formatBillingRate);
+  }
+
   const form = document.getElementById('calcForm');
   if (!form || !window.location.pathname.endsWith('/calculations')) return;
 
