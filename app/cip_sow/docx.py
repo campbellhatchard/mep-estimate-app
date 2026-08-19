@@ -15,6 +15,7 @@ from ..sow_models import SOW, SOWTemplateVersion
 from .. import sow_service
 from .core import SOW_TEMPLATE_CIP_NET_NEW, cip_go_live_support_hours, cip_scope_lists, _assumptions
 
+
 def _delete_table(table) -> None:
     el = table._element
     if el.getparent() is not None:
@@ -108,20 +109,22 @@ def _fill_cip_tables(
         for token, value in token_values.items():
             if token in right:
                 row.cells[1].text = value
-                if not value.strip() and token not in ("[[ERP_OS]]", "[[ERP_DB]]"):
-                    _delete_row(atable, row)
-                elif not value.strip() and token in ("[[ERP_OS]]", "[[ERP_DB]]"):
+                if not value.strip():
                     _delete_row(atable, row)
                 break
 
-    marker_row = next(
-        (row for row in list(atable.rows) if len(row.cells) > 1 and "[[DEVICE_ROWS]]" in row.cells[1].text),
+    # python-docx creates fresh _Row wrappers each time table.rows is accessed, so
+    # determine the marker index from one stable list rather than comparing wrappers.
+    rows = list(atable.rows)
+    marker_index = next(
+        (
+            idx for idx, row in enumerate(rows)
+            if len(row.cells) > 1 and "[[DEVICE_ROWS]]" in row.cells[1].text
+        ),
         None,
     )
-    if marker_row is not None:
-        rows = list(atable.rows)
-        start = rows.index(marker_row)
-        for row in rows[start:]:
+    if marker_index is not None:
+        for row in rows[marker_index:]:
             _delete_row(atable, row)
         for dev in sow.devices:
             if not dev.make_model.strip():
