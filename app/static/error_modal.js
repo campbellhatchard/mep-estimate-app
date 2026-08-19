@@ -43,12 +43,12 @@
         const body = JSON.parse(text || '{}');
         const detail = body.detail ?? body;
         if (typeof detail === 'string') message = detail;
-        else if (detail && typeof detail === 'object') {
-          message = detail.message || detail.detail || message;
-          fields = detail.fields || [];
-        } else if (Array.isArray(detail)) {
+        else if (Array.isArray(detail)) {
           message = detail.map(item => item.msg || item.message || String(item)).join('\n');
           fields = detail.map(item => Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : null).filter(Boolean);
+        } else if (detail && typeof detail === 'object') {
+          message = detail.message || detail.detail || message;
+          fields = detail.fields || [];
         }
       } catch (_) {
         // Fall through to the plain-text cleanup below.
@@ -89,16 +89,19 @@
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     if (event.defaultPrevented) return;
-    if (form.method.toLowerCase() !== 'post' || form.dataset.nativeSubmit === 'true' || form.dataset.errorModal === 'off' || form.target) return;
+    const submitter = event.submitter;
+    const method = (submitter?.formMethod || form.method || 'get').toLowerCase();
+    if (method !== 'post' || form.dataset.nativeSubmit === 'true' || form.dataset.errorModal === 'off' || form.target) return;
 
     event.preventDefault();
-    const submitter = event.submitter;
     if (submitter) submitter.disabled = true;
 
     try {
-      const response = await fetch(form.action || window.location.href, {
+      const action = submitter?.formAction || form.action || window.location.href;
+      const body = submitter ? new FormData(form, submitter) : new FormData(form);
+      const response = await fetch(action, {
         method: 'POST',
-        body: new FormData(form, submitter),
+        body,
         credentials: 'same-origin',
         headers: {'X-Requested-With': 'fetch'}
       });
