@@ -15,6 +15,10 @@
     .mobile-nav-links{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;background:#fff;border:1px solid #c7d1d5;border-radius:4px;box-shadow:0 4px 16px #0002;padding:6px;z-index:100}
     .mobile-nav-links a{display:block;padding:9px 10px;color:#435860;border-radius:3px;white-space:nowrap}
     .mobile-nav-links a:hover{background:#e9f3f6;color:#066f88}
+    .estimate-head-actions{display:flex;align-items:center;gap:10px}
+    .estimate-head-actions form{margin:0}
+    button.danger{background:#b32d2e;border-color:#b32d2e;color:#fff}
+    button.danger:hover{background:#922426;border-color:#922426}
     @media(max-width:900px){.mobile-nav-menu{display:block}}
   </style>
 </head>
@@ -44,7 +48,14 @@
 {% set displayed_product = 'CIP' if rev.engine_version and rev.engine_version.startswith('CIP-') else 'MEP' %}
 <div class="estimate-head">
   <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }} of {{ estimate.revisions|length }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
-  <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
+  <div class="estimate-head-actions">
+    <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
+    {% if rev.status=='DRAFT' and estimate.revisions|length==1 and user and user.has_role('ADMIN','ESTIMATOR','REVIEWER','APPROVER') %}
+    <form method="post" action="/estimate/{{rev.id}}/delete" onsubmit="return confirm('Permanently delete estimate {{estimate.estimate_number}} and all associated details? This cannot be undone.');">
+      <button type="submit" class="danger">Delete Estimate</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 <nav class="tabs">
   <a class="{% if active_tab=='estimate' %}active{% endif %}" href="/estimate/{{rev.id}}">Estimate</a>
