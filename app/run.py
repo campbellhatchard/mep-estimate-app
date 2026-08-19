@@ -7,6 +7,7 @@ from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
 from .assumptions import register_assumption_routes
+from .estimate_delete import register_estimate_delete
 from .precision_runtime import install_calculation_precision, register_precision_routes, register_precision_startup
 # Apply controlled SOW layout migrations before SOW registration.
 from . import sow_layout_v2  # noqa: F401
@@ -23,7 +24,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.10"
+app.version = "0.3.11"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -52,6 +53,9 @@ register_precision_startup(app)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
 register_assumption_routes(app, core)
+# Draft estimate deletion is shared by MEP and CIP and remains unavailable once a controlled
+# historical revision exists.
+register_estimate_delete(app, core)
 # Install the source-template two-column signature layout before SOW routes are registered.
 # This affects both review PDFs and generated Word documents without changing commercial content.
 install_sow_signature_layout()
