@@ -1,0 +1,6 @@
+Controlled CIP SOW source specification chunks (Git blob SHA):
+part00 41b96cdf6d108a1527b2e79d035821868385e6b3 4000 bytes
+part01 14be0cadda8c6ddb5e19adb01ca59dd860d155a9 4000 bytes
+part02 2f7bd3d8b26c7107dcd621d082af21a3a2a23aa7 4000 bytes
+part03 217bdb0a51a71e7ede736d93bf156047e12a6eff 3124 bytes
+Total 15124 bytes.
