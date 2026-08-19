@@ -31,6 +31,7 @@ def test_mep_standard_adjust_preserves_half_hour_precision():
         rid = create_revision(client)
         with SessionLocal() as db:
             rev = db.get(EstimateRevision, rid)
+            assert rev.engine_version == '1.0.1'
             rev.project_type = 'MEP On Prem'
             db.add(CalculationAdjustment(revision_id=rid, line_key='PLAN_ADW', adjust_hours=0.5, notes='Precision regression'))
             db.flush()
@@ -90,6 +91,8 @@ def test_cip_project_management_adjustment_is_added_after_formula_rounding():
     with TestClient(app) as client:
         login(client)
         rid = create_cip_revision(client)
+        with SessionLocal() as db:
+            assert db.get(EstimateRevision, rid).engine_version == 'CIP-1.0.1'
         base = client.post(f'/estimate/{rid}/calculations/preview', data={
             'line_count': '1', 'line_key_0': 'PLAN_PM', 'phase_0': 'Plan', 'adjust_0': '0'
         })
