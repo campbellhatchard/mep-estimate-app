@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% set active_tab='sow' %}
+{% block title %}CIP SOW {{estimate.estimate_number}}{% endblock %}
+{% block content %}
+<div class="estimate-shell wide-shell sow-shell">
+  <div class="page-title-row">
+    <div><h1>CIP New Client Statement of Work</h1><div class="subtle">SOW Revision {{sow.sow_revision_no}} · Template v{{sow.template_version.version_no}} · {{sow.template_version.status}}</div></div>
+    <span class="status status-{{sow.status|lower}}">{{sow.status.replace('_',' ')}}</span>
+  </div>
+
+  {% if sow.status=='REJECTED' %}<section class="card rejection-card"><h2>Rejected</h2><p><strong>Reason:</strong> {{sow.rejection_reason}}</p></section>{% endif %}
+  {% if sow.status=='APPROVED' %}<section class="card success-card"><h2>Approved SOW</h2><p>The wording is locked to Template v{{sow.template_version.version_no}} and the approved SOW data.</p><a class="button primary" href="/sow/{{sow.id}}/docx">Download Word SOW</a> <a class="button secondary" href="/sow/{{sow.id}}/pdf" target="_blank">Open PDF</a></section>{% endif %}
+
+  <form method="post" action="/sow/{{sow.id}}/save" id="sowForm">
+    <section class="card">
+      <div class="section-heading-row"><div><h2>SOW Details</h2><div class="subtle">Fields are retained with this SOW revision and do not change when a later template becomes active.</div></div></div>
+      <div class="sow-grid">
+        <label>SOW Date<input value="{{sow.sow_date.strftime('%Y-%m-%d')}}" disabled></label>
+        <label>Agreement Type<select name="agreement_type" {% if readonly %}disabled{% endif %}>{% for x in agreement_types %}<option value="{{x}}" {% if sow.agreement_type==x %}selected{% endif %}>{{x}}</option>{% endfor %}</select></label>
+        <label>Invoice Frequency<select name="invoice_frequency" {% if readonly %}disabled{% endif %}>{% for x in invoice_frequencies %}<option {% if sow.invoice_frequency==x %}selected{% endif %}>{{x}}</option>{% endfor %}</select></label>
+        <label>Customer<input value="{{rev.customer}}" disabled></label>
+        <label>Contracting Entity<input value="{{rev.entity}}" disabled></label>
+        <label>Estimate Number<input value="{{estimate.estimate_number}}" disabled></label>
+        <label class="span-all">Project Objective<textarea name="project_objective" rows="3" {% if readonly %}disabled{% endif %}>{{sow.project_objective}}</textarea></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading-row"><div><h2>Estimate-Derived SOW Scope</h2><div class="subtle">Read-only scope inherited from the approved CIP estimate. Changes require a new estimate revision, not a SOW edit.</div></div></div>
+      <div class="sow-grid">
+        <label>CIP Deployment<input value="Cloud Inventory® Hosted" disabled></label>
+        <label>Gateway<input value="{{'Included' if gateway_included else 'Not Included'}}" disabled></label>
+        <label>EPP<input value="{{inp.epp_install if epp_included else 'Not Included'}}" disabled></label>
+        <label>RESTful Interfaces<input value="{{inp.rest_interface_count if rest_included else 'Not Included'}}" disabled></label>
+        <label>Labels<input value="{{inp.label_count if scope.labels else 'Not Included'}}" disabled></label>
+        <label>Security Method<input value="{{inp.security_method}}" disabled></label>
+      </div>
+      <div class="subtle" style="margin-top:10px">
+        Baseline applications: {{scope.baseline|length}} · Personalized applications: {{scope.custom|length}} · Reports: {{scope.reports|length}} · Integrations: {{scope.integrations|length}}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Appendix A — Planned Deployment Details</h2>
+      <div class="sow-grid">
+        <label>ERP / System<input value="{{inp.deployed_over}}" disabled></label>
+        <label>CIP Product Version<input value="{{sow.mep_product_version}}" disabled></label>
+        {% if not is_standalone %}
+        <label>ERP / System Version<input name="erp_version" value="{{sow.erp_version}}" {% if readonly %}disabled{% endif %}></label>
+        <label>ERP Deployment Model<input name="erp_deployment_model" value="{{sow.erp_deployment_model}}" placeholder="e.g. Customer Managed / Private Cloud" {% if readonly %}disabled{% endif %}></label>
+        {% if is_jde %}
+        <label>ERP Base Code Version<input name="erp_base_code_version" value="{{sow.erp_base_code_version}}" {% if readonly %}disabled{% endif %}></label>
+        <label>ERP Tools Release<input name="erp_tools_release" value="{{sow.erp_tools_release}}" {% if readonly %}disabled{% endif %}></label>
+        {% endif %}
+        <label>ERP Application Server OS / Version<input name="erp_os_version" value="{{sow.erp_os_version}}" {% if readonly %}disabled{% endif %}></label>
+        <label>ERP Database Type / Version<input name="erp_database_version" value="{{sow.erp_database_version}}" {% if readonly %}disabled{% endif %}></label>
+        {% endif %}
+        {% if epp_included %}
+        <label>EPP Product Version<input name="epp_product_version" value="{{sow.epp_product_version}}" {% if readonly %}disabled{% endif %}></label>
+        <label>Barcode Printer Count<input name="barcode_printer_count" type="number" min="0" value="{{sow.barcode_printer_count}}" {% if readonly %}disabled{% endif %}></label>
+        <label class="span-all">Print Methods<input name="print_methods" value="{{sow.print_methods}}" placeholder="e.g. CIP Print Agent, File Drop, RESTful API" {% if readonly %}disabled{% endif %}></label>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading-row"><div><h2>Go-Live / Hypercare Allocation</h2><div class="subtle">Allocations must reconcile to the approved Estimate's Go-Live Support hours before Finalize.</div></div>
+      <div class="metric-inline"><strong>Approved:</strong> {{go_live_support_hours|round(2)}} h · <strong>Allocated:</strong> {{allocated_hours|round(2)}} h · <strong>Unallocated:</strong> {{unallocated_hours|round(2)}} h</div></div>
+      <div id="hypercareRows">
+        {% for row in sow.hypercare_locations %}
+        <div class="repeat-row hypercare-row">
+          <input name="hypercare_description" value="{{row.description}}" placeholder="Location Description" {% if readonly %}disabled{% endif %}>
+          <input name="hypercare_country" value="{{row.country}}" placeholder="Country" {% if readonly %}disabled{% endif %}>
+          <select name="hypercare_support_type" {% if readonly %}disabled{% endif %}>{% for x in support_types %}<option {% if row.support_type==x %}selected{% endif %}>{{x}}</option>{% endfor %}</select>
+          <input name="hypercare_hours" type="number" step="0.25" min="0" value="{{row.allocated_hours}}" placeholder="Hours" {% if readonly %}disabled{% endif %}>
+          {% if not readonly %}<button type="button" class="button small secondary remove-repeat">Remove</button>{% endif %}
+        </div>{% endfor %}
+      </div>
+      {% if not readonly %}<button type="button" class="button secondary small" id="addHypercare">Add Location</button>{% endif %}
+    </section>
+
+    <section class="card">
+      <div class="section-heading-row"><div><h2>Planned Device Information</h2><div class="subtle">Optional. Empty device rows are omitted from Appendix A.</div></div></div>
+      <div id="deviceRows">
+        {% for row in sow.devices %}
+        <div class="repeat-row device-row">
+          <select name="device_type" {% if readonly %}disabled{% endif %}>{% for x in device_types %}<option {% if row.device_type==x %}selected{% endif %}>{{x}}</option>{% endfor %}</select>
+          <input name="device_make_model" value="{{row.make_model}}" placeholder="Make / Model" {% if readonly %}disabled{% endif %}>
+          <input name="device_os_version" value="{{row.os_version}}" placeholder="OS / Version" {% if readonly %}disabled{% endif %}>
+          {% if not readonly %}<button type="button" class="button small secondary remove-repeat">Remove</button>{% endif %}
+        </div>{% endfor %}
+      </div>
+      {% if not readonly %}<button type="button" class="button secondary small" id="addDevice">Add Device</button>{% endif %}
+    </section>
+
+    {% if sow.status=='DRAFT' and can_prepare %}<div class="action-row"><button class="button primary" type="submit">Save SOW Details</button></div>{% endif %}
+  </form>
+
+  <section class="card sow-actions">
+    <h2>Workflow</h2>
+    {% if sow.status=='DRAFT' and can_prepare %}
+      <p>Finalize when all SOW data is complete and Hypercare hours reconcile.</p>
+      <form method="post" action="/sow/{{sow.id}}/finalize"><button class="button primary">Finalize SOW</button></form>
+    {% elif sow.status=='FINALIZED' and can_prepare %}
+      <div class="action-row">
+        <form method="post" action="/sow/{{sow.id}}/return-draft"><button class="button secondary">Return to Draft</button></form>
+        <form method="post" action="/sow/{{sow.id}}/send-approval" class="inline-form">
+          <label>Assign SOW Approver<select name="approver_id" required><option value="">Select approver</option>{% for a in approvers %}{% if a.id != user.id %}<option value="{{a.id}}">{{a.username}}</option>{% endif %}{% endfor %}</select></label>
+          <button class="button primary">Send for Approval</button>
+        </form>
+      </div>
+    {% elif sow.status=='PENDING_APPROVAL' %}
+      <p>Pending approval by <strong>{{users.get(sow.approver_id,'Assigned Approver')}}</strong>. The SOW is locked while under review.</p>
+      {% if can_approve %}
+      <div class="approval-actions">
+        <form method="post" action="/sow/{{sow.id}}/approve"><button class="button primary">Approve SOW</button></form>
+        <form method="post" action="/sow/{{sow.id}}/reject" class="reject-form"><label>Rejection Reason<textarea name="reason" rows="3" required placeholder="Describe the specific reason for rejection"></textarea></label><button class="button danger">Reject SOW</button></form>
+      </div>
+      {% endif %}
+    {% elif sow.status=='REJECTED' and can_prepare %}
+      <p>The rejected SOW is retained exactly as reviewed. Create a new SOW revision to make changes.</p>
+      <form method="post" action="/sow/{{sow.id}}/new-revision"><button class="button primary">Create SOW Revision</button></form>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="section-heading-row"><div><h2>PDF Review</h2><div class="subtle">The approval view is generated from the same resolved SOW content used for the Word document.</div></div><a class="button secondary small" href="/sow/{{sow.id}}/pdf" target="_blank">Open PDF</a></div>
+    <iframe class="pdf-review-frame" src="/sow/{{sow.id}}/pdf" title="CIP SOW PDF review"></iframe>
+  </section>
+
+  <section class="card">
+    <h2>SOW Revision History</h2>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>SOW Rev</th><th>Status</th><th>Template</th><th>Created</th><th>Action</th></tr></thead><tbody>
+      {% for item in history %}<tr><td>{{item.sow_revision_no}}</td><td>{{item.status.replace('_',' ')}}</td><td>v{{item.template_version.version_no}}</td><td>{{item.created_at.strftime('%Y-%m-%d %H:%M')}}</td><td><a href="/sow/{{item.id}}">View</a></td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/sow.js"></script>
+{% endblock %}
