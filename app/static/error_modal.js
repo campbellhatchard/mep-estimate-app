@@ -90,14 +90,18 @@
     if (!(form instanceof HTMLFormElement)) return;
     if (event.defaultPrevented) return;
     const submitter = event.submitter;
-    const method = (submitter?.formMethod || form.method || 'get').toLowerCase();
+    const method = (
+      submitter?.hasAttribute('formmethod') ? submitter.formMethod : (form.method || 'get')
+    ).toLowerCase();
     if (method !== 'post' || form.dataset.nativeSubmit === 'true' || form.dataset.errorModal === 'off' || form.target) return;
 
     event.preventDefault();
     if (submitter) submitter.disabled = true;
 
     try {
-      const action = submitter?.formAction || form.action || window.location.href;
+      const action = submitter?.hasAttribute('formaction')
+        ? submitter.formAction
+        : (form.action || window.location.href);
       const body = submitter ? new FormData(form, submitter) : new FormData(form);
       const response = await fetch(action, {
         method: 'POST',
