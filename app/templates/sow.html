@@ -9,7 +9,7 @@
   </div>
 
   {% if sow.status=='REJECTED' %}<section class="card rejection-card"><h2>Rejected</h2><p><strong>Reason:</strong> {{sow.rejection_reason}}</p></section>{% endif %}
-  {% if sow.status=='APPROVED' %}<section class="card success-card"><h2>Approved SOW</h2><p>The wording is locked to Template v{{sow.template_version.version_no}} and the approved SOW data.</p><a class="button primary" href="/sow/{{sow.id}}/docx">Download Word SOW</a> <a class="button secondary" href="/sow/{{sow.id}}/pdf" target="_blank">Open PDF</a></section>{% endif %}
+  {% if sow.status=='APPROVED' %}<section class="card success-card"><h2>Approved SOW</h2><p>The wording is locked to Template v{{sow.template_version.version_no}} and the approved SOW data.</p></section>{% endif %}
 
   <form method="post" action="/sow/{{sow.id}}/save" id="sowForm">
     <section class="card">
@@ -104,7 +104,13 @@
   </section>
 
   <section class="card">
-    <div class="section-heading-row"><div><h2>PDF Review</h2><div class="subtle">The approval view is generated from the same resolved SOW content used for the Word document.</div></div><a class="button secondary small" href="/sow/{{sow.id}}/pdf" target="_blank">Open PDF</a></div>
+    <div class="section-heading-row">
+      <div><h2>SOW Review</h2><div class="subtle">The PDF and controlled Word document are generated from the same resolved SOW content.</div></div>
+      <div class="action-row">
+        <a class="button secondary small" href="/sow/{{sow.id}}/pdf" target="_blank">Open PDF</a>
+        <a class="button secondary small" href="/sow/{{sow.id}}/docx">{{'Controlled Word SOW' if sow.status=='APPROVED' else 'Draft Word SOW'}}</a>
+      </div>
+    </div>
     <iframe class="pdf-review-frame" src="/sow/{{sow.id}}/pdf" title="SOW PDF review"></iframe>
   </section>
 
