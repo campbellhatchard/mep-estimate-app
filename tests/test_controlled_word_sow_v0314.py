@@ -53,7 +53,7 @@ def _insert_toc_field(doc: Document) -> None:
 
 def _source_docx() -> bytes:
     doc = Document()
-    cover = doc.paragraphs[0]
+    cover = doc.add_paragraph()
     cover.text = "Statement Of Work"
     cover.add_run().add_picture(io.BytesIO(_tiny_png()))
     _insert_toc_field(doc)
