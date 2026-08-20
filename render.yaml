@@ -19,6 +19,8 @@ services:
         generateValue: true
       - key: ADMIN_PASSWORD
         sync: false
+      - key: SOW_TRACK_CHANGES_PASSWORD
+        sync: false
       - key: ENVIRONMENT
         value: production
       - key: APP_TIMEZONE
