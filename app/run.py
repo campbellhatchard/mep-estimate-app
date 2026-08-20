@@ -17,6 +17,7 @@ from . import sow_template_reconcile  # noqa: F401
 from .sow_template_startup import register_sow_template_reconciliation
 from .sow_routes import register_sow
 from .cip_sow import register_cip_sow
+from .sow_word_control import register_controlled_sow_word
 from .sow_signature_runtime import install_sow_signature_layout
 
 if "SOW_APPROVER" not in ROLE_ORDER:
@@ -25,7 +26,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.13"
+app.version = "0.3.14"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -67,3 +68,6 @@ register_sow(app, core)
 # CIP SOW is layered after the accepted MEP SOW so shared workflow routes remain unchanged
 # and only product-specific SOW entry/render/finalization behavior is dispatched for CIP.
 register_cip_sow(app, core)
+# All Microsoft Word SOW downloads leave through one protected boundary. Register last so
+# both MEP and CIP Net New SOW routes are intercepted consistently for every SOW state.
+register_controlled_sow_word(app, core)
