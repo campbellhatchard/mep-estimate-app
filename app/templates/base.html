@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/static/cip.css">
   <link rel="stylesheet" href="/static/assumptions.css">
   <link rel="stylesheet" href="/static/sow.css">
+  <link rel="stylesheet" href="/static/error_modal.css">
   <style>
     .mobile-nav-menu{display:none;position:relative;margin-left:auto}
     .mobile-nav-menu summary{list-style:none;cursor:pointer;border:1px solid #b9c7cd;border-radius:4px;padding:7px 10px;color:#334750;background:#fff;font-weight:600;white-space:nowrap}
@@ -69,12 +70,23 @@
 {% endif %}
 <main class="page {% block pageclass %}{% endblock %}">{% block content %}{% endblock %}</main>
 {% if rev and active_tab=='estimate' %}<div id="assumptionsDetached" hidden>{% include "_assumptions.html" %}</div>{% endif %}
+
+<div id="ciErrorModal" class="ci-error-modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="ciErrorTitle" aria-describedby="ciErrorMessage">
+  <div class="ci-error-dialog">
+    <h2 id="ciErrorTitle">Unable to Complete Action</h2>
+    <p id="ciErrorMessage"></p>
+    <div class="ci-error-actions"><button type="button" id="ciErrorOk" class="button primary">OK</button></div>
+  </div>
+</div>
+
 <script>
 function filterTable(inputId, tableId){const q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none');}
 function toggleTrace(id){document.getElementById(id).classList.toggle('hidden');}
 </script>
+<script src="/static/error_modal.js"></script>
 <script src="/static/assumptions.js"></script>
 <script src="/static/cip_range_percent.js"></script>
 <script src="/static/precision_ui.js"></script>
+<script src="/static/detail_preview.js"></script>
 {% block scripts %}{% endblock %}
 </body></html>
