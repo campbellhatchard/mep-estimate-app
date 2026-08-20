@@ -51,9 +51,6 @@
   <div><strong>Estimate {{ estimate.estimate_number }}</strong> <span class="product-badge product-{{displayed_product|lower}}">{{displayed_product}}</span> <span class="muted">Revision {{ rev.revision_no }} of {{ estimate.revisions|length }}</span> <span class="status status-{{rev.status|lower}}">{{rev.status}}</span></div>
   <div class="estimate-head-actions">
     <div class="muted">Config {{ rev.config_version_id }} · Engine {{ rev.engine_version }}</div>
-    {% if active_tab=='sow' and sow %}
-    <a class="button secondary small" href="/sow/{{sow.id}}/docx">{{'Controlled Word SOW' if sow.status=='APPROVED' else 'Draft Word SOW'}}</a>
-    {% endif %}
     {% if active_tab=='estimate' and rev.status=='DRAFT' and estimate.revisions|length==1 and user and user.has_role('ADMIN','ESTIMATOR','REVIEWER','APPROVER') %}
     <form method="post" action="/estimate/{{rev.id}}/delete" onsubmit="return confirm('Permanently delete estimate {{estimate.estimate_number}} and all associated details? This cannot be undone.');">
       <button type="submit" class="danger">Delete Estimate</button>
