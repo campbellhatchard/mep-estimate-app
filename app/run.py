@@ -19,6 +19,7 @@ from .sow_routes import register_sow
 from .cip_sow import register_cip_sow
 from .sow_word_control import register_controlled_sow_word
 from .sow_signature_runtime import install_sow_signature_layout
+from .sow_review_runtime import install_sow_review_pdf_watermark
 
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
@@ -26,7 +27,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.14"
+app.version = "0.3.14.1"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -61,6 +62,8 @@ register_estimate_delete(app, core)
 # Install the source-template two-column signature layout before SOW routes are registered.
 # This affects both review PDFs and generated Word documents without changing commercial content.
 install_sow_signature_layout()
+# Non-approved SOW review PDFs remain visibly controlled until the approval event is complete.
+install_sow_review_pdf_watermark()
 # Explicitly reconcile the controlled MEP SOW templates at process startup. register_sow also
 # retains its existing seed hook; this direct registration removes any import-binding ambiguity.
 register_sow_template_reconciliation(app)
