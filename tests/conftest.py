@@ -13,6 +13,7 @@ if TEST_DB.exists():
 os.environ['DATABASE_URL'] = f'sqlite:///{TEST_DB}'
 os.environ['SESSION_SECRET'] = 'pytest-secret'
 os.environ['ADMIN_PASSWORD'] = 'TestPass123!'
+os.environ['SOW_TRACK_CHANGES_PASSWORD'] = 'Pytest-SOW-Track-Changes-123!'
 
 
 def pytest_collection_modifyitems(config, items):
