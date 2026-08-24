@@ -249,7 +249,7 @@ def test_cip_sow_full_workflow_scope_pdf_and_approved_word():
             assert sow.approved_text_snapshot
 
         docx = client.get(f"/sow/{sid}/docx")
-        assert docx.status_code == 200
+        assert docx.status_code == 200, docx.text
         doc = Document(BytesIO(docx.content))
         text = doc_text(doc)
 
