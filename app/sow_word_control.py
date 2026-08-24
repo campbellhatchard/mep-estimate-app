@@ -112,7 +112,15 @@ def _pdf_layout(pdf_bytes: bytes, headings: list[_Heading]) -> tuple[dict[tuple[
 
     first = headings[0]
     first_needle = _normalized(f"{first.body_number} {first.title}")
-    body_start = next((index + 1 for index, text in enumerate(pages) if first_needle in text), None)
+    # The TOC page(s) list every heading using the same numbered text as the heading's own
+    # body page (by construction, both the TOC entry and the heading text come from the same
+    # "{number} {title}" string). Scanning forward and taking the FIRST match therefore finds
+    # the TOC listing, not the real body page, because the TOC always precedes the body.
+    # Take the LAST match instead: the true body occurrence is always the latest one, since
+    # every heading is preceded by a page break and the TOC is fully emitted before any body
+    # content begins.
+    first_matches = [index + 1 for index, text in enumerate(pages) if first_needle in text]
+    body_start = first_matches[-1] if first_matches else None
     if body_start is None:
         raise ValueError("The SOW review PDF could not be reconciled to the Word document headings.")
 
