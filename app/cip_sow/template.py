@@ -134,19 +134,41 @@ def build_cip_template(db: Session) -> bytes:
     protos = _prototypes(doc)
     _clear_body(doc)
 
+    toc_inserted = False
+
+    def _insert_toc() -> None:
+        nonlocal toc_inserted
+        if not toc_inserted:
+            doc._element.body.insert(len(doc._element.body) - 1, deepcopy(toc))
+            toc_inserted = True
+
     for item in _spec():
         kind = item[0]
         if kind == "p":
             _, style_name, text, page_break, special = item
             if special == "TOC":
-                doc._element.body.insert(len(doc._element.body) - 1, deepcopy(toc))
+                _insert_toc()
             else:
+                # The bundled spec does not carry an explicit TOC marker item (every
+                # entry's `special` field is empty), so the field is never placed by
+                # the branch above. Insert it at the position a real Word
+                # "Insert > Table of Contents" page occupies: immediately before the
+                # first numbered heading, i.e. right before Section 1.0. Without
+                # this, the built CIP template contains no TOC field at all, and the
+                # controlled-Word TOC/page-number reconciliation in
+                # app/sow_word_control.py fails every CIP SOW with a 409.
+                if style_name == "Heading 1":
+                    _insert_toc()
                 _append_paragraph(doc, style_name, text, bool(page_break))
         elif kind == "t":
             rows = item[1]
             _clone_table_for_rows(doc, _prototype_for_spec(rows, protos), rows)
         elif kind == "sect":
             continue
+
+    # Defensive: guarantee a TOC field is always present even if some future
+    # revision of the bundled spec has no Heading 1 at all.
+    _insert_toc()
 
     # Preserve the accepted template behavior: Word refreshes TOC and page fields on open.
     settings = doc.settings._element
