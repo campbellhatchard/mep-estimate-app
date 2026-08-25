@@ -1,1 +1,0 @@
-Controlled source templates for Small Project SOW generation. Binary DOCX assets are reconstructed at runtime from adjacent Base64 part files.
