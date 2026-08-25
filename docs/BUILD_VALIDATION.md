@@ -1,43 +1,70 @@
-# Build Validation — v0.1
+# Build Validation — Current Production Line
 
-## Automated validation
+**Current accepted release:** v0.3.14.1  
+**Current development base:** `main`
 
-Current automated suite: **6 passing tests**.
+This file is a concise validation status summary. The authoritative release procedure is [`BUILD_AND_RELEASE_GATES.md`](BUILD_AND_RELEASE_GATES.md).
 
-Validated behaviors:
+## Current validated capability
 
-- health endpoint and application startup;
-- case-insensitive username authentication;
-- estimate creation and recalculation;
-- workbook-style Estimate, Estimate Detail, Calculations, Schedule, Audit, Calculation Data, and User Administration pages render;
-- approved workbook cached default baseline reproduces **2 hours / $500 at $250/hour**;
-- invalid estimate/go-live combinations are rejected;
-- non-zero calculation adjustments require a reason and create audit events;
-- configuration versions are immutable for existing estimate revisions;
-- explicit rebase creates a new revision pinned to the current Active configuration;
-- Approved revisions reject further editing;
-- PDF export produces a valid PDF stream;
-- Jira CSV export uses the approved workbook's complete **27-column header structure**;
-- required calculation parameters have no source-code fallback: if configuration is missing, calculation fails explicitly;
-- initial Alembic migration upgrades an empty database successfully.
+The accepted production line includes:
 
-## Production release gates still open
+- MEP and CIP estimating;
+- configuration and revision pinning;
+- corrected MEP engine 1.0.1 and CIP engine CIP-1.0.1 for editable/new revisions;
+- historical calculation preservation for locked older revisions;
+- estimate lifecycle/revision controls;
+- Draft estimate deletion controls;
+- live calculation/detail preview;
+- schedules, PDF and Jira CSV outputs;
+- estimate assumptions;
+- MEP Net New and CIP Net New SOW preparation;
+- SOW assignment, approval, rejection and revision lifecycle;
+- SOW review PDF Draft watermarking;
+- controlled Word generation in every SOW state;
+- non-approved Word Draft watermarking;
+- password-enforced Track Changes;
+- approved-content hash/snapshot verification;
+- Word header/footer and TOC/page reconciliation.
 
-This build is a runnable application baseline, not a Production parity sign-off. Before Production release:
+Small Project SOW authoring is not part of the current production baseline.
 
-1. Business-approve the Rule Resolution Register.
-2. Execute the Golden Scenario matrix in `PARITY_AND_RELEASE_GATE.md` against the approved workbook/intended results.
-3. Resolve every unexplained mismatch.
-4. Complete user-acceptance review of workbook-layout fidelity and terminology.
-5. Validate the Jira dependency/link mapping required by the delivery team.
-6. Apply final production security/identity decisions (local auth vs enterprise SSO) and operational backup/restore testing.
-7. Validate final branded PDF content before customer use.
+## Latest observed automated validation
 
-## Known deliberately deferred capabilities
+The v0.3.14.1 production-line regression run completed successfully. The primary regression group reported:
 
-- two-person configuration reviewer/approver enforcement;
-- CRM API integration;
-- SOW template generation;
-- enterprise SSO;
-- historical estimate import;
-- live project management after estimate generation.
+- **60 passed**
+- **1 skipped**
+
+The skip is intentional: the original monolithic SOW lifecycle test is retained as historical design/regression documentation and is superseded by focused SOW lifecycle tests.
+
+The GitHub Actions workflow must execute the focused lifecycle modules explicitly rather than presenting the intentionally skipped monolithic scenario as a successful release-gate test.
+
+## Migration validation
+
+CI validates `alembic upgrade head` against a new empty SQLite database before running application regression tests.
+
+Any release adding schema must additionally validate its migration against the current production migration head and must not reuse migration identifiers from abandoned branches.
+
+## Current open release/governance work
+
+Tracked GitHub issues now include:
+
+- #22 v0.3.15 Small Project SOW Foundation
+- #23 Small Project SOW Authoring and Workflow
+- #24 Four-Family SOW Regression Matrix
+- #25 Application Architecture Consolidation
+- #26 CI and Deprecation Warning Cleanup
+- #27 Configuration Approval Governance
+- #28 CRM, Enterprise SSO and Integration Backlog
+- #29 Repository Governance and Current Design Specification
+
+## Repository controls still requiring GitHub settings
+
+The repository is currently public and `main` has not been protected through required PR/status-check enforcement.
+
+Before proprietary controlled template assets are committed, confirm whether public visibility is intentional. `main` should also be protected so normal releases require a PR and successful Application Tests.
+
+## Release acceptance
+
+A green CI run is necessary but is not sufficient to declare a release production-accepted. Applicable migration, regression, document-generation, deployed health and representative user workflow checks must also succeed, followed by explicit acceptance of the release baseline.

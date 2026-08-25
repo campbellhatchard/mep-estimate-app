@@ -25,7 +25,12 @@ jobs:
           DATABASE_URL=sqlite:////tmp/mep_estimate_migration.db PYTHONPATH=. alembic upgrade head
       - name: Run MEP and CIP regression tests
         run: PYTHONPATH=. pytest -q --ignore=tests/test_zzz_sow.py
-      - name: Run SOW approval lifecycle test
-        run: PYTHONPATH=. pytest -q tests/test_zzz_sow.py::test_sow_workflow_role_queue_rejection_revision_and_approval_lock
+      - name: Run focused SOW approval lifecycle gates
+        run: |
+          PYTHONPATH=. pytest -q \
+            tests/test_zzza_sow_queue.py \
+            tests/test_zzzb_sow_approval.py \
+            tests/test_zzzc_sow_lock.py \
+            tests/test_zzzz_cip_sow.py
       - name: Run SOW assumptions section test
         run: PYTHONPATH=. pytest -q tests/test_zzz_sow.py::test_estimate_assumptions_feed_sow_section_414
