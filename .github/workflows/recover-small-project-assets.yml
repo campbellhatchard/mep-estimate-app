@@ -1,0 +1,111 @@
+name: Recover Small Project Assets
+
+on:
+  push:
+    branches:
+      - feature/v0.3.15-small-project-sow-foundation-clean
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout clean foundation branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch historical feature branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --force
+      - name: Recover exact controlled DOCX assets from repository history
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+          import base64
+          import hashlib
+          import re
+          import subprocess
+          from pathlib import Path
+
+          targets = {
+              "MEP_Template_SmallProject_2026_08.docx": "a075ac54adbdfd1301835a546abbc5a09677b90d6b93e3a084c39b59d8af2226",
+              "CIP_Template_SmallProject_2026_07.docx": "9cd71d907fdf21e4ab51d5f2fda53cd1dafcab6a6c855c87e0ebe0ded8ecbb2a",
+          }
+          refs = [
+              "refs/remotes/origin/feature/v0.3.15-small-project-sow-foundation",
+              "refs/remotes/origin/enhancement/v0.3.14-small-project-sow-controlled-word",
+              "refs/remotes/origin/enhancement/v0.3.9-small-project-sow",
+          ]
+
+          def git(*args: str) -> str:
+              return subprocess.check_output(["git", *args], text=True, errors="strict")
+
+          def try_group(commit: str, paths: list[str], expected: str):
+              groups: dict[tuple[str, int], list[tuple[int, str]]] = {}
+              for path in paths:
+                  # Keep different numbering widths separate so abandoned/rechunked series
+                  # cannot be accidentally concatenated together.
+                  m = re.match(r"^(.*\.docx\.b64(?:v\d+)?\.(?:part|segment))(\d+)$", path)
+                  if not m:
+                      continue
+                  digits = m.group(2)
+                  groups.setdefault((m.group(1), len(digits)), []).append((int(digits), path))
+              for (_, _), items in groups.items():
+                  items.sort()
+                  # A coherent chunk series must be contiguous. Allow either zero- or one-based.
+                  indexes = [n for n, _ in items]
+                  if not indexes or indexes != list(range(indexes[0], indexes[0] + len(indexes))):
+                      continue
+                  text = "".join(git("show", f"{commit}:{path}") for _, path in items)
+                  clean = "".join(text.split())
+                  try:
+                      content = base64.b64decode(clean, validate=True)
+                  except Exception:
+                      continue
+                  if hashlib.sha256(content).hexdigest() == expected:
+                      return content
+              return None
+
+          found: dict[str, bytes] = {}
+          for ref in refs:
+              try:
+                  commits = git("rev-list", "--reverse", ref).splitlines()
+              except subprocess.CalledProcessError:
+                  continue
+              for commit in commits:
+                  if len(found) == len(targets):
+                      break
+                  paths = git("ls-tree", "-r", "--name-only", commit).splitlines()
+                  for filename, expected in targets.items():
+                      if filename in found:
+                          continue
+                      matching = [p for p in paths if filename in p and ".b64" in p]
+                      content = try_group(commit, matching, expected)
+                      if content is not None:
+                          found[filename] = content
+                          print(f"Recovered {filename} from {commit[:12]} ({len(content)} bytes)")
+              if len(found) == len(targets):
+                  break
+
+          missing = sorted(set(targets) - set(found))
+          if missing:
+              raise SystemExit("Unable to recover exact controlled asset(s): " + ", ".join(missing))
+
+          destination = Path("app/small_project_sow_template_assets")
+          destination.mkdir(parents=True, exist_ok=True)
+          for filename, content in found.items():
+              path = destination / filename
+              path.write_bytes(content)
+              actual = hashlib.sha256(content).hexdigest()
+              assert actual == targets[filename]
+              print(f"Verified {filename}: {actual}")
+          PY
+      - name: Commit recovered binary assets and remove one-time workflow
+        run: |
+          rm .github/workflows/recover-small-project-assets.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github/workflows/recover-small-project-assets.yml app/small_project_sow_template_assets
+          git commit -m "Add verified Small Project SOW binary assets"
+          git push origin HEAD:feature/v0.3.15-small-project-sow-foundation-clean
