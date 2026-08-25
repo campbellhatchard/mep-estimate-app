@@ -20,6 +20,11 @@ from .cip_sow import register_cip_sow
 from .sow_word_control import register_controlled_sow_word
 from .sow_signature_runtime import install_sow_signature_layout
 from .sow_review_runtime import install_sow_review_pdf_watermark
+# Roadmap 1 Small Project foundation only. Import the ORM models so SQLAlchemy knows the
+# normalized tables; authoring routes are deliberately deferred to Roadmap 2.
+from . import small_project_models  # noqa: F401
+from .small_project_sow import register_small_project_sow_templates
+from .small_project_template_admin import register_small_project_template_admin
 
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
@@ -27,7 +32,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.14.1"
+app.version = "0.3.15.0"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -71,6 +76,10 @@ register_sow(app, core)
 # CIP SOW is layered after the accepted MEP SOW so shared workflow routes remain unchanged
 # and only product-specific SOW entry/render/finalization behavior is dispatched for CIP.
 register_cip_sow(app, core)
+# Roadmap 1 adds only controlled Small Project template families and their persisted foundation.
+# It does not add Small Project estimate/SOW authoring routes.
+register_small_project_template_admin(app, core)
+register_small_project_sow_templates(app)
 # All Microsoft Word SOW downloads leave through one protected boundary. Register last so
-# both MEP and CIP Net New SOW routes are intercepted consistently for every SOW state.
+# both existing MEP and CIP Net New SOW routes remain intercepted consistently for every state.
 register_controlled_sow_word(app, core)
