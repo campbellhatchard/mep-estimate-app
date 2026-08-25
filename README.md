@@ -1,49 +1,92 @@
-# Cloud Inventory MEP Estimate Application
+# Cloud Inventory Services Estimator
 
-This repository contains the runnable application that replaces the approved `Estimate_2026_MEP_18` Excel workbook with a controlled, auditable web application.
+This repository contains the controlled estimating application for Cloud Inventory professional-services engagements. It supports both **Mobile Enterprise Platform (MEP)** and **Cloud Inventory Platform (CIP)** estimating, revision governance, approvals, schedules, exports and controlled Statement of Work generation.
 
-## Current build scope
+## Current production baseline
 
-Implemented:
+- Application release: **v0.3.14.1**
+- Accepted release branch: `baseline/v0.3.14.1-accepted`
+- Current `main` includes the accepted v0.3.14.1 release plus PR #21's dead-code-only Small Project scaffolding cleanup.
+- Runtime entry point: `app.run:app`
+- MEP calculation engine for editable/new revisions: **1.0.1**
+- CIP calculation engine for editable/new revisions: **CIP-1.0.1**
+- Locked historical revisions preserve their pinned historical calculation behavior.
 
-- Workbook-aligned **Estimate** page with approved dropdown values and ERP-specific application/package catalogs.
-- Iterative Estimate recalculation: calculation-driving fields save/recalculate on field exit or selection change so hours and fees build as the estimate is entered.
-- **Deployed Over** changes reset the ERP application/package catalog to **No Config** before loading the new ERP catalog.
-- **Estimate Detail** with Base Hours, editable Mod Hours, Unit Testing, Notes, totals, and audited Unit Testing Factor override.
-- **Calculations** by Plan, Design, Build, Test, and Go-Live with editable Standard Adjust and mandatory adjustment notes.
-- **Schedule** generated from the estimate, spreadsheet-style planning grid, editable resource/status/% complete/change order/hours used/comments/dates, and Gantt timeline.
-- Schedule staleness warning and explicit regeneration so manual schedule edits are never silently overwritten.
-- Searchable **Calculation Data** area, viewable by all and editable by Administrators in Draft configuration versions.
-- Configuration lifecycle: Draft -> Active -> Retired, with schema fields reserved for future reviewer/approver workflow.
-- Immutable estimate/configuration pinning. Existing revisions retain their original configuration. Explicit **Rebase to Current Model** creates a new revision.
-- Estimate lifecycle: Draft -> Review -> Approved -> Superseded.
-- Multi-role users: Administrator, Estimator, Reviewer, Approver, and Read Only may be assigned in any valid combination.
-- User email address, Active/Inactive status, role maintenance, and Administrator password reset capability.
-- Case-insensitive username authentication while preserving display capitalization.
-- Append-only audit events for estimate, detail, calculations, schedule, configuration, lifecycle, user administration, and exports.
-- Cloud Inventory branding using the full-color logo on light application surfaces.
-- PDF estimate generation.
-- Jira CSV export generated from Schedule using the approved workbook's complete 27-column header structure. Dependency/link columns are reserved for later relationship mapping; Parent/Epic hierarchy is populated in v1.
-- PostgreSQL production database; SQLite supported for local development.
-- Alembic schema migrations.
-- Render Blueprint (`render.yaml`) for GitHub -> Render deployment.
-- Automated workflow tests.
+`main` is the source for new development. Do not revive or merge obsolete feature branches simply because they contain earlier implementations of a capability.
 
-## Important control principle
+## Implemented capability
 
-The application separates:
+### Shared estimating controls
 
-1. **Inputs** — estimate-specific selections.
-2. **Configuration values/factors** — Administrator controlled and versioned.
-3. **Calculation rules** — software controlled and regression tested.
-4. **Estimate-level overrides** — separately stored, visibly identified, and audited.
+- Product-aware MEP/CIP estimate repository and immutable product selection.
+- Monthly estimate numbering and revision history.
+- Draft/Review/Approved/Superseded estimate lifecycle.
+- Configuration versions with Draft/Active/Retired lifecycle and immutable revision pinning.
+- Explicit rebase to the current active configuration through a new revision.
+- Append-only audit events.
+- Multi-role user administration including Administrator, Estimator, Reviewer, Approver, SOW Approver and Read Only.
+- Case-insensitive username authentication, active/inactive users and administrator password reset.
+- Draft estimate deletion under controlled eligibility rules.
+- In-application blocking error modal behavior.
 
-Material numeric assumptions from the workbook have been externalized into the initial configuration model rather than left as hidden source-code constants.
-Required calculation parameters do **not** have business-value fallbacks in source code; a missing required configuration value fails explicitly rather than silently changing the estimate.
+### MEP estimating
 
-Approved spelling/name corrections are presented at the user interface while legacy internal lookup values are retained where needed to protect calculation parity and historical reproducibility.
+- Workbook-aligned Estimate, Estimate Detail, Calculations and Schedule workflows.
+- ERP-aware application/package catalogs.
+- Live calculation/detail preview using the same corrected calculation engine used by Save.
+- Fractional adjustment precision through MEP calculation engine 1.0.1.
+- PDF estimate output and Jira CSV export.
 
-## Local run
+### CIP estimating
+
+- Independent CIP configuration, release catalog, scope/domain model and calculation path.
+- Desktop, Mobile, integrations, reporting, labels, REST/Boomi and testing inputs.
+- CIP Estimate Detail, phase calculations, schedule, PDF and Jira CSV output.
+- Fractional adjustment precision through CIP calculation engine CIP-1.0.1.
+
+### Net New SOW workflow
+
+MEP Net New and CIP Net New SOWs are implemented and controlled through a shared lifecycle:
+
+`DRAFT -> FINALIZED -> PENDING_APPROVAL -> APPROVED / REJECTED`
+
+Controls include:
+
+- assigned SOW Approver and no self-approval;
+- mandatory rejection reason;
+- immutable rejected SOWs with new-revision creation;
+- versioned/pinned SOW templates;
+- PDF review inside the application;
+- **DRAFT** watermarking for non-approved review PDFs;
+- Microsoft Word download in every SOW state;
+- **DRAFT** Word watermarking for non-approved SOWs;
+- password-enforced Microsoft Word Track Changes;
+- approved-content canonical-text SHA-256 and approved text snapshot;
+- verification before approved Word regeneration;
+- controlled Word header/footer, pagination and TOC reconciliation.
+
+## Not yet on `main`
+
+**Small Project SOW authoring is not implemented on the production baseline.** It is being rebuilt cleanly from v0.3.14.1 rather than merging the obsolete mixed Small Project branches.
+
+Track that work in:
+
+- Issue #22 — v0.3.15 Small Project SOW Foundation
+- Issue #23 — Small Project SOW Authoring and Workflow
+- Issue #24 — Four-Family SOW Regression Matrix
+
+The controlled MEP and CIP Small Project source DOCX assets must be stored as real binary Git assets with SHA-256 verification. Do not restore the previous fragmented Base64 asset approach.
+
+## Authoritative documentation
+
+- `docs/CURRENT_SYSTEM_DESIGN.md` — current architecture and functional control model.
+- `docs/BUILD_AND_RELEASE_GATES.md` — build, test, migration, PR and release requirements.
+- `docs/DESIGN_SPEC.md` — original MEP workbook-era design record; retained for historical traceability only.
+- `docs/BUILD_VALIDATION.md` — current validation summary and pointer to the release gates.
+
+When documentation conflicts, `CURRENT_SYSTEM_DESIGN.md`, `BUILD_AND_RELEASE_GATES.md`, current automated tests and the accepted production code take precedence over historical design documents.
+
+## Local development
 
 Python 3.12+ is recommended.
 
@@ -54,109 +97,58 @@ python -m venv .venv
 # macOS/Linux
 source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 alembic upgrade head
 uvicorn app.run:app --reload
 ```
 
-Open `http://127.0.0.1:8000`.
+Required/important environment variables:
 
-### Initial Administrator
-
-If no users exist, the application creates:
-
-- Username: `Admin`
-- Password: value of environment variable `ADMIN_PASSWORD`
-
-For local development only, if `ADMIN_PASSWORD` is absent, the fallback is `ChangeMe123!`. Do not use that fallback in a shared environment.
-
-Example:
-
-```bash
-export ADMIN_PASSWORD='replace-with-a-strong-password'
-export SESSION_SECRET='replace-with-a-long-random-secret'
+```text
+DATABASE_URL
+SESSION_SECRET
+ADMIN_PASSWORD
+SOW_TRACK_CHANGES_PASSWORD
 ```
 
-Windows PowerShell:
+For local development, SQLite is supported. Production uses PostgreSQL.
 
-```powershell
-$env:ADMIN_PASSWORD = 'replace-with-a-strong-password'
-$env:SESSION_SECRET = 'replace-with-a-long-random-secret'
-```
-
-## Tests
+Run the complete test suite with:
 
 ```bash
 PYTHONPATH=. pytest -q
 ```
 
-The current suite validates:
-
-- case-insensitive authentication;
-- estimate creation and recalculation;
-- rendering of Estimate, Estimate Detail, Calculations, Schedule, Audit, Calculation Data, and Users;
-- PDF and Jira CSV output;
-- adjustment-note enforcement and audit events;
-- configuration-version immutability and explicit rebase;
-- Approved revision locking;
-- Deployed Over/ERP catalog reset behavior;
-- multi-role user creation and maintenance;
-- user email and Active/Inactive status;
-- approved user-facing terminology normalization.
+GitHub Actions additionally validates a clean Alembic upgrade and explicit SOW release-gate scenarios.
 
 ## Render deployment
 
-The repository includes `render.yaml`.
+`render.yaml` defines the GitHub-to-Render deployment contract:
 
-1. Push or merge the approved release to the GitHub `main` branch.
-2. Render's Blueprint-linked web service detects the `main` update.
-3. Alembic runs as the pre-deploy migration command.
-4. The application starts through `uvicorn app.run:app`.
-5. Existing data remains in the durable Render PostgreSQL database.
+- branch: `main`
+- automatic deploy on commit
+- build: `pip install -r requirements.txt`
+- pre-deploy: `alembic upgrade head`
+- start: `uvicorn app.run:app --host 0.0.0.0 --port $PORT`
+- health check: `/health`
+- durable PostgreSQL database
 
-For a first-time Blueprint creation, set the `ADMIN_PASSWORD` secret when prompted. The database is the durable system of record; do not rely on the Render web-service filesystem for persistent application data.
+Do not rely on the Render web-service filesystem for persistent business data.
 
-## Source workbook controls
+## Repository and release governance
 
-The supplied workbook remains the approved initial business source model. It contains known broken named references and several spreadsheet defects. The application therefore does **not** blindly execute Excel formulas. The extracted rule inventory and original formulas are retained under `docs/` for parity review.
+New work should follow this pattern:
 
-Before Production approval, complete the Golden Scenario validation described in `docs/PARITY_AND_RELEASE_GATE.md`.
+1. start from current `main`;
+2. use one focused feature/hotfix/chore branch;
+3. do not mix unrelated business changes into one PR;
+4. run migration and regression checks through GitHub Actions;
+5. merge only after the PR is green and the requested behavior is accepted;
+6. create/retain a baseline branch for accepted releases where appropriate;
+7. delete obsolete merged branches after their history is safely represented on `main`.
 
-## Repository structure
+`main` should be protected in GitHub settings with pull-request and required-status-check enforcement. The repository is currently public; before committing proprietary controlled commercial templates or other sensitive artifacts, confirm that public visibility is intentional or change the repository to private.
 
-```text
-app/
-  main.py                    Core FastAPI routes and workflow
-  run.py                     Enhanced production application entry point
-  enhancements.py            Multi-role admin and terminology normalization
-  models.py                  SQLAlchemy domain model
-  database.py                Database setup
-  auth.py                    Authentication/authorization
-  seed.py                    Initial approved configuration
-  services/
-    calculation.py           Deterministic estimate engine
-    schedule.py              Estimate -> Schedule generator
-    audit.py                 Append-only audit event helper
-  seed/
-    approved_model_2026_08_1.json
-    schedule_template_2026.json
-  templates/                 Workbook-aligned server-rendered UI
-  static/
-    app.css
-    ci-logo-full.webp
-migrations/                  Alembic migrations
-tests/                       Automated workflow tests
-docs/                        Design, workbook inventory, rule/config catalogs
-render.yaml                  Render Blueprint
-```
+## Deferred roadmap
 
-## Explicit future items
-
-Architected but not implemented in this build:
-
-- two-person configuration reviewer/approver enforcement;
-- CRM API integration;
-- SOW template/content generation;
-- enterprise SSO;
-- historical Excel estimate import;
-- live project-management functionality beyond generated estimate Schedule.
+The tracked backlog includes Small Project SOW, four-family SOW regression, architecture consolidation, CI/deprecation cleanup, configuration approval governance, CRM integration, enterprise SSO and related enterprise integration work. GitHub Issues are the authoritative backlog for future implementation work.
