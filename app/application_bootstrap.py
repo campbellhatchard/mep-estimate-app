@@ -119,19 +119,22 @@ def _register_sow_capabilities(app, core) -> None:
 
 
 def configure_application(app, core) -> None:
-    """Single application composition root.
+    """Build the production application in one explicit, regression-protected order."""
 
-    Registration order is intentionally explicit. Route ownership is asserted after all
-    wrappers/dispatch layers are installed so accidental interception becomes a startup error.
-    """
-
+    # Warning/persistence hardening is installed before any route is registered or startup
+    # callback can execute. It changes compatibility plumbing only, not calculation/document
+    # behavior or persisted timestamp semantics.
     install_warning_hardening(core)
-    _configure_roles()
-    configure_templates(core.templates)
 
+    _configure_roles()
+    app.title = "Cloud Inventory Services Estimator"
     app.version = RELEASE_VERSION
+    configure_templates(core.templates)
 
     _register_estimate_capabilities(app, core)
     _register_sow_capabilities(app, core)
 
+    # This converts the previous implicit registration order into an executable contract. A
+    # missing, duplicate or unexpectedly-owned shared route prevents a release from silently
+    # changing product/family dispatch behavior.
     assert_final_route_owners(app)
