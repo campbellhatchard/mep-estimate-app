@@ -14,6 +14,8 @@ from .assumptions import register_assumption_routes
 from .estimate_delete import register_estimate_delete
 from .detail_preview import register_detail_preview
 from .precision_runtime import install_calculation_precision, register_precision_routes, register_precision_startup
+from .calculation_explain import install_calculation_explanations
+from .tools_admin_runtime import register_tools_admin_runtime
 # Apply controlled SOW layout migrations before SOW registration.
 from . import sow_layout_v2  # noqa: F401
 from . import sow_layout_v3  # noqa: F401
@@ -63,6 +65,9 @@ def _generate_schedule_with_normalized_text(db, rev, replace=True):
 
 core.generate_schedule = _generate_schedule_with_normalized_text
 register_cip(app, core, core.generate_schedule)
+# Decorate calculation output with user-facing derivation evidence. This wraps read-time
+# calculation results only; recalculation/storage functions remain untouched.
+install_calculation_explanations(core)
 # Product dispatch now exists; add calculation and detail previews using the same corrected
 # calculation engine as Save so unsaved changes produce production-equivalent results.
 register_precision_routes(app, core)
@@ -95,6 +100,9 @@ register_small_project_sow_templates(app)
 # Small Project dispatch is layered after both accepted Net New product routes. It intercepts
 # only pinned MEP_SMALL_PROJECT / CIP_SMALL_PROJECT SOWs and delegates every other route.
 register_small_project_sow_workflow(app, core)
+# Complete the Tools Admin boundary after all shared Calculation Data and SOW-template routes
+# exist, including the legacy template-download route.
+register_tools_admin_runtime(app, core)
 # Extend, rather than replace, the accepted controlled Word boundary for Small Project families.
 install_small_project_word_dispatch()
 # All Microsoft Word SOW downloads leave through one protected boundary. Register last so
