@@ -5,6 +5,7 @@ from .enhancements import configure_templates, register_routes, clean_schedule_t
 from .models import ROLE_ORDER
 from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
+from .schedule_exports_runtime import register_schedule_exports
 from .revision_history import register_revision_history
 from .estimate_revision_controls import (
     install_estimate_business_rule_controls,
@@ -43,7 +44,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.19.0"
+app.version = "0.3.20.0"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -67,11 +68,15 @@ def _generate_schedule_with_normalized_text(db, rev, replace=True):
 
 core.generate_schedule = _generate_schedule_with_normalized_text
 register_cip(app, core, core.generate_schedule)
+# Replace the product-specific Jira routes only after CIP has established product dispatch.
+# Schedule CSV reads persisted rows and never regenerates a stale schedule; Jira retains the
+# existing initial-generation behavior only when no schedule exists yet.
+register_schedule_exports(app, core)
 # Decorate calculation output with user-facing derivation evidence. This wraps read-time
 # calculation results only; recalculation/storage functions remain untouched.
 install_calculation_explanations(core)
 # Version-gated MEP SOW document composition. Existing controlled SOWs remain renderer v1;
-# new v0.3.19 SOWs opt into v2 ERP/system-version wording.
+# new v0.3.19+ SOWs opt into v2 ERP/system-version wording.
 install_mep_sow_erp_wording(core)
 # Product dispatch now exists; add calculation and detail previews using the same corrected
 # calculation engine as Save so unsaved changes produce production-equivalent results.
