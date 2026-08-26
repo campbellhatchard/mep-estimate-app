@@ -6,17 +6,12 @@ from sqlalchemy.orm import Session
 
 from . import sow_service
 from .cip_domain import _take_route, revision_product
-from .cip_models import PRODUCT_CIP
 from .cip_sow.core import SOW_TEMPLATE_CIP_NET_NEW, cip_go_live_support_hours
 from .cip_sow.docx import verify_cip_approved_content
 from .database import get_db
 from .models import EstimateRevision, User
 from .services.audit import record
-from .small_project_models import (
-    SmallProjectSOWConfig,
-    SmallProjectSOWDeliverable,
-    SmallProjectSOWMethodology,
-)
+from .small_project_models import SmallProjectSOWConfig
 from .small_project_sow import (
     SOW_TEMPLATE_CIP_SMALL_PROJECT,
     SOW_TEMPLATE_MEP_SMALL_PROJECT,
@@ -80,9 +75,6 @@ def _source_sow(db: Session, prior: EstimateRevision, template_key: str) -> SOW 
     candidates = [row for row in candidates if _template_key(db, row) == template_key]
     if not candidates:
         return None
-
-    # Controlled/complete sources outrank partially authored work. Within the same
-    # status, the latest SOW revision is already first from the database ordering.
     priority = {"APPROVED": 0, "REJECTED": 1, "FINALIZED": 2}
     eligible = [row for row in candidates if row.status in priority]
     if not eligible:
@@ -116,10 +108,6 @@ def _new_support_hours(
 def _copy_base_manual_fields(source: SOW, dest: SOW, template_key: str) -> None:
     for field in COMMON_MANUAL_FIELDS:
         setattr(dest, field, getattr(source, field))
-
-    # MEP Product Version and the SOW-level REST selection are manually authored in
-    # MEP SOWs. CIP derives its product version/REST requirement from the newly
-    # approved estimate/configuration and therefore deliberately keeps new defaults.
     if template_key in {SOW_TEMPLATE_MEP_NET_NEW, SOW_TEMPLATE_MEP_SMALL_PROJECT}:
         dest.mep_product_version = source.mep_product_version
         dest.rest_api_required = source.rest_api_required
@@ -156,8 +144,6 @@ def _copy_hypercare(
         prior = source_rows[index]
         row.description = prior.description
         row.country = prior.country
-        # Keep the new estimate's support topology as authoritative; copy the prior
-        # support type only when the row exists in both revisions.
         row.support_type = prior.support_type
 
     new_total = float(_new_support_hours(db, rev, template_key) or 0)
@@ -197,8 +183,6 @@ def _copy_small_project_manual_fields(
         prior = source_deliverables.get(row.deliverable_key)
         if not prior:
             continue
-        # `include` is deliberately not copied: it is a scope default regenerated
-        # from the newly approved estimate. Only authored narrative is carried.
         row.scope_description = prior.scope_description
         row.detail_notes = prior.detail_notes
 
@@ -265,7 +249,7 @@ def carry_forward_sow_content(
 
 
 def register_sow_lineage_carry_forward(app, core) -> None:
-    """Wrap the final four-family SOW-create dispatcher with lineage carry-forward."""
+    """Wrap final four-family SOW creation and opt new SOWs into composition v2."""
     previous_create = _take_route(app, "/estimate/{rid}/sow/create", "POST")
     if previous_create is None:
         raise RuntimeError("SOW create route must exist before lineage carry-forward is registered")
@@ -288,5 +272,7 @@ def register_sow_lineage_carry_forward(app, core) -> None:
             return response
         dest = db.get(SOW, sow_id)
         if dest and dest.estimate_revision_id == rid:
+            dest.composition_version = 2
+            db.commit()
             carry_forward_sow_content(db, dest, rev, user)
         return response
