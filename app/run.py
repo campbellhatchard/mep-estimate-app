@@ -6,6 +6,10 @@ from .models import ROLE_ORDER
 from .estimate_numbering import register_numbered_estimate_route
 from .cip import register_cip
 from .revision_history import register_revision_history
+from .estimate_revision_controls import (
+    install_estimate_business_rule_controls,
+    register_revision_rationale_controls,
+)
 from .assumptions import register_assumption_routes
 from .estimate_delete import register_estimate_delete
 from .detail_preview import register_detail_preview
@@ -32,12 +36,15 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.16.0"
+app.version = "0.3.17.0"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
 # continue to dispatch to their historical engine; editable/new revisions use v1.0.1.
 install_calculation_precision(core)
+# Keep workbook validation in one request boundary while adding the explicit EPP On Prem
+# architecture dependency. Install before CIP registration so product routes capture it.
+install_estimate_business_rule_controls(core)
 register_routes(app)
 register_numbered_estimate_route(app, core)
 
@@ -60,6 +67,9 @@ register_detail_preview(app, core)
 register_precision_startup(app)
 # Register revision lifecycle last so the same controlled behavior applies to both products.
 register_revision_history(app, core)
+# Add the user-entered revision rationale prompt/history layer after the shared MEP/CIP
+# revision lifecycle has been installed; source revisions remain immutable.
+register_revision_rationale_controls(app, core)
 register_assumption_routes(app, core)
 # Draft estimate deletion is shared by MEP and CIP and remains unavailable once a controlled
 # historical revision exists.
