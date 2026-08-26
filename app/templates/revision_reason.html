@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Rebase' if rebase else 'New Revision' }} — {{ estimate.estimate_number }}{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row">
+    <div>
+      <h1>{{ 'Rebase to Current Model' if rebase else 'Create New Revision' }}</h1>
+      <div class="subtle">Estimate {{ estimate.estimate_number }} · Source Rev {{ rev.revision_no }}</div>
+    </div>
+    <a class="button secondary" href="/estimate/{{ rev.id }}">Cancel</a>
+  </div>
+
+  <div class="card" style="max-width: 760px;">
+    <h2>Revision Notes</h2>
+    <p>Describe why this estimate is being revised. These notes become part of the permanent revision history and audit trail.</p>
+    {% if error %}<div class="error-message" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" action="/estimate/{{ rev.id }}/new-revision{% if rebase %}?rebase=true{% endif %}">
+      <label for="revision_reason"><strong>Reason for revision</strong></label>
+      <textarea id="revision_reason" name="revision_reason" rows="5" required autofocus style="width:100%; margin-top:8px;" placeholder="Example: Customer added a second deployment site and requested an additional integration."></textarea>
+      <div class="action-row" style="margin-top:16px;">
+        <button class="button primary" type="submit">{{ 'Create Rebased Revision' if rebase else 'Create New Revision' }}</button>
+        <a class="button secondary" href="/estimate/{{ rev.id }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
