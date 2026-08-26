@@ -10,7 +10,8 @@ os.environ['ADMIN_PASSWORD'] = 'TestPass123!'
 from fastapi.testclient import TestClient
 from app.run import app
 from app.database import SessionLocal
-from app.models import EstimateRevision, EstimateApplication, ConfigItem, ConfigurationVersion, AuditEvent, User
+from app.models import EstimateRevision, EstimateApplication, ConfigItem, ConfigurationVersion, AuditEvent, User, UserRole
+from app.auth import hash_password, normalize_username
 
 
 def login(c):
@@ -82,11 +83,26 @@ def test_configuration_pin_and_explicit_rebase():
         with SessionLocal() as db:
             item=db.query(ConfigItem).filter(ConfigItem.config_version_id==draft_id,ConfigItem.key=='UNIT_TEST_FACTOR').one(); item_id=item.id
         r=c.post(f'/data/item/{item_id}',data={'label':'Unit Testing Factor','value_number':'0.25','value_text':'','description':'','active':'on','reason':'Regression test'},follow_redirects=False); assert r.status_code==303
+        assert c.post(f'/data/version/{draft_id}/submit',follow_redirects=False).status_code==303
+        with SessionLocal() as db:
+            reviewer=db.query(User).filter(User.username_normalized=='config-pin-reviewer').first()
+            if not reviewer:
+                reviewer=User(username='ConfigPinReviewer',username_normalized=normalize_username('ConfigPinReviewer'),password_hash=hash_password('ReviewerPass123!'),role='TOOLS_ADMIN',active=True)
+                db.add(reviewer); db.flush()
+            else:
+                reviewer.password_hash=hash_password('ReviewerPass123!'); reviewer.active=True
+            if not db.query(UserRole).filter(UserRole.user_id==reviewer.id,UserRole.role=='TOOLS_ADMIN').first():
+                db.add(UserRole(user_id=reviewer.id,role='TOOLS_ADMIN'))
+            db.commit()
+        c.post('/logout',follow_redirects=False)
+        r=c.post('/login',data={'username':'ConfigPinReviewer','password':'ReviewerPass123!'},follow_redirects=False); assert r.status_code==303
+        r=c.post(f'/data/version/{draft_id}/review',data={'action':'approve','reason':'Independent configuration regression review'},follow_redirects=False); assert r.status_code==303
         r=c.post(f'/data/version/{draft_id}/activate',follow_redirects=False); assert r.status_code==303
         with SessionLocal() as db:
             rev1=db.get(EstimateRevision,rid)
             assert rev1.config_version_id==old_config
             assert rev1.calculated_hours==old_hours
+        c.post('/logout',follow_redirects=False); login(c)
         # A new revision is created only from a locked historical revision and the
         # controlled revision rationale is now mandatory for both Revision and Rebase.
         assert c.post(f'/estimate/{rid}/status/submit',follow_redirects=False).status_code==303
