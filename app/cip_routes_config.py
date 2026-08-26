@@ -6,14 +6,24 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from .cip_domain import _int, active_config_for_product, configuration_product
+from .cip_domain import _int, _take_route, active_config_for_product, configuration_product
 from .cip_models import ConfigurationProduct, PRODUCT_CIP, PRODUCT_MEP
 from .database import get_db
 from .models import ConfigItem, ConfigurationVersion
 from .services.audit import record
 
+CONFIG_ADMIN_ROLES = ("ADMIN", "TOOLS_ADMIN")
+
 
 def register_config_routes(app, core):
+    # Replace the legacy generic configuration handlers so MEP and CIP use one
+    # product-aware authorization boundary for all controlled mutations.
+    _take_route(app, "/data", "GET")
+    _take_route(app, "/data/version/new", "POST")
+    _take_route(app, "/data/version/{vid}/activate", "POST")
+    _take_route(app, "/data/item/{item_id}", "POST")
+    _take_route(app, "/data/item/new", "POST")
+
     @app.get("/data", response_class=HTMLResponse)
     def data_page(request: Request, version: int | None = None, product: str = PRODUCT_MEP, q: str = "", category: str = "", db: Session = Depends(get_db)):
         user = core.current_user(request, db); product = product.upper() if product.upper() in (PRODUCT_MEP, PRODUCT_CIP) else PRODUCT_MEP
@@ -32,7 +42,7 @@ def register_config_routes(app, core):
 
     @app.post("/data/version/new")
     async def new_config_version(request: Request, db: Session = Depends(get_db)):
-        user = core.current_user(request, db); core.require_role(user, "ADMIN"); form = await request.form(); product = str(form.get("product", PRODUCT_MEP)).upper()
+        user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); form = await request.form(); product = str(form.get("product", PRODUCT_MEP)).upper()
         if product not in (PRODUCT_MEP, PRODUCT_CIP): raise HTTPException(400, "Unknown configuration product")
         src = active_config_for_product(db, product); stamp = datetime.utcnow().strftime("%Y.%m.%d.%H%M")
         version = ConfigurationVersion(name=f"{product} Estimate Model {stamp}", status="DRAFT", created_by=user.id, change_reason=f"Draft {product} configuration cloned from active model")
@@ -44,7 +54,7 @@ def register_config_routes(app, core):
 
     @app.post("/data/version/{vid}/activate")
     def activate_config(vid: int, request: Request, db: Session = Depends(get_db)):
-        user = core.current_user(request, db); core.require_role(user, "ADMIN"); version = db.get(ConfigurationVersion, vid)
+        user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); version = db.get(ConfigurationVersion, vid)
         if not version or version.status != "DRAFT": raise HTTPException(409, "Only a draft can be activated")
         product = configuration_product(db, version.id)
         for active in db.query(ConfigurationVersion).filter(ConfigurationVersion.status == "ACTIVE").all():
@@ -53,9 +63,39 @@ def register_config_routes(app, core):
         record(db, event_type="CONFIG_VERSION_ACTIVATED", user_id=user.id, config_version_id=version.id, new_value=version.name, reason=version.change_reason); db.commit()
         return RedirectResponse(f"/data?product={product}&version={version.id}", 303)
 
+    @app.post("/data/item/{item_id}")
+    async def update_config_item(item_id: int, request: Request, db: Session = Depends(get_db)):
+        user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); item = db.get(ConfigItem, item_id)
+        if not item: raise HTTPException(404, "Calculation Data element not found")
+        version = db.get(ConfigurationVersion, item.config_version_id)
+        if not version or version.status != "DRAFT": raise HTTPException(409, "Only draft configuration versions can be edited")
+        form = await request.form(); old = f"{item.label}|{item.value_number}|{item.value_text}|{item.active}"
+        item.label = str(form.get("label", item.label)); item.description = str(form.get("description", item.description or ""))
+        raw = str(form.get("value_number", "")).strip(); item.value_number = float(raw) if raw else None
+        item.value_text = str(form.get("value_text", item.value_text or "")) or None; item.active = core.bool_form(form, "active")
+        reason = str(form.get("reason", "")).strip()
+        if not reason: raise HTTPException(400, "Change reason is required")
+        record(db, event_type="CONFIG_VALUE_CHANGED", user_id=user.id, config_version_id=version.id, field_name=item.key, old_value=old, new_value=f"{item.label}|{item.value_number}|{item.value_text}|{item.active}", reason=reason); db.commit()
+        product = configuration_product(db, version.id)
+        return RedirectResponse(f"/data?product={product}&version={version.id}&q={item.key}", 303)
+
+    @app.post("/data/item/new")
+    async def new_config_item(request: Request, db: Session = Depends(get_db)):
+        user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); form = await request.form(); vid = _int(form, "version_id", 0); version = db.get(ConfigurationVersion, vid)
+        if not version or version.status != "DRAFT": raise HTTPException(409, "Add items to a draft configuration")
+        category = str(form.get("category", "")).strip(); label = str(form.get("label", "")).strip(); key = str(form.get("key", "")).strip() or core.slug(label)
+        if not category or not label: raise HTTPException(400, "Category and label are required")
+        reason = str(form.get("reason", "")).strip()
+        if not reason: raise HTTPException(400, "Change reason is required")
+        raw = str(form.get("value_number", "")).strip(); number = float(raw) if raw else None
+        item = ConfigItem(config_version_id=vid, category=category, key=key, label=label, value_number=number, value_text=str(form.get("value_text", "")).strip() or None, value_type=str(form.get("value_type", "text")), parent_key=str(form.get("parent_key", "")).strip() or None, active=True, sort_order=999)
+        db.add(item); record(db, event_type="CONFIG_ITEM_ADDED", user_id=user.id, config_version_id=vid, field_name=key, new_value=label, reason=reason); db.commit()
+        product = configuration_product(db, vid)
+        return RedirectResponse(f"/data?product={product}&version={vid}&q={key}", 303)
+
     @app.post("/cip/data/release/new")
     async def add_cip_release(request: Request, db: Session = Depends(get_db)):
-        user = core.current_user(request, db); core.require_role(user, "ADMIN"); form = await request.form(); vid = _int(form, "version_id", 0); version = db.get(ConfigurationVersion, vid)
+        user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); form = await request.form(); vid = _int(form, "version_id", 0); version = db.get(ConfigurationVersion, vid)
         if not version or version.status != "DRAFT" or configuration_product(db, vid) != PRODUCT_CIP: raise HTTPException(409, "Add a CIP release only to a draft CIP configuration.")
         label = str(form.get("label", "")).strip(); reason = str(form.get("reason", "")).strip(); match = re.fullmatch(r"Release\s+(\d+)\.(\d+)", label, flags=re.IGNORECASE)
         if not match: raise HTTPException(400, "Release must use the format 'Release 26.3'.")
