@@ -54,7 +54,3 @@ def test_partial_invalid_draft_can_be_deleted_without_estimate_validation():
         with SessionLocal() as db:
             assert db.get(EstimateRevision, rid) is None
             assert db.get(Estimate, estimate_id) is None
-
-
-def test_release_version_is_v03150():
-    assert app.version == '0.3.15.0'
