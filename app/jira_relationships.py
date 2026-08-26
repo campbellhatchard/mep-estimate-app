@@ -37,6 +37,7 @@ JIRA_RELATIONSHIP_COLUMNS = {
 }
 
 LOCKED_REVISION_STATUSES = {"APPROVED", "FINAL", "SUPERSEDED"}
+EDIT_ROLES = ("ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
 
 
 def jira_exportable_task(task: ScheduleTask) -> bool:
@@ -103,7 +104,7 @@ def _task_or_400(db: Session, task_id: int, revision_id: int) -> ScheduleTask:
 
 
 def _require_editable_revision(core, user, rev) -> None:
-    core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+    core.require_role(user, *EDIT_ROLES)
     if rev.status in LOCKED_REVISION_STATUSES or rev.status != "DRAFT":
         raise HTTPException(409, "Jira relationships can only be changed while the revision is Draft")
 
@@ -135,6 +136,7 @@ def register_jira_relationship_routes(app, core) -> None:
             if relationship.source_task_id in task_by_id
             and relationship.target_task_id in task_by_id
         ]
+        can_edit = rev.status == "DRAFT" and user.has_role(*EDIT_ROLES)
         return core.templates.TemplateResponse(
             "jira_relationships.html",
             {
@@ -147,7 +149,7 @@ def register_jira_relationship_routes(app, core) -> None:
                 "relationships": relationships,
                 "relationship_labels": RELATIONSHIP_LABELS,
                 "relationship_capacity": RELATIONSHIP_CAPACITY,
-                "readonly": rev.status != "DRAFT",
+                "readonly": not can_edit,
             },
         )
 
