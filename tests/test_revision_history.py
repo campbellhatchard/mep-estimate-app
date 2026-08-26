@@ -71,7 +71,11 @@ def test_mep_revision_history_preserves_approved_versions_and_adjustments():
             source_custom_sort = custom.sort_order
 
         approve(client, rid1)
-        response = client.post(f'/estimate/{rid1}/new-revision', follow_redirects=False)
+        response = client.post(
+            f'/estimate/{rid1}/new-revision',
+            data={'revision_reason': 'Revise approved MEP scope while preserving historical adjustments.'},
+            follow_redirects=False,
+        )
         assert response.status_code == 303
         rid2 = int(response.headers['location'].rsplit('/', 1)[-1])
 
@@ -122,7 +126,11 @@ def test_mep_revision_history_preserves_approved_versions_and_adjustments():
         assert 'SUPERSEDED' in old_page.text
 
         # A historical superseded revision can be used as the source of a new Draft without reopening it.
-        response = client.post(f'/estimate/{rid1}/new-revision', follow_redirects=False)
+        response = client.post(
+            f'/estimate/{rid1}/new-revision',
+            data={'revision_reason': 'Create a third controlled revision from historical approved scope.'},
+            follow_redirects=False,
+        )
         assert response.status_code == 303
         rid3 = int(response.headers['location'].rsplit('/', 1)[-1])
         with SessionLocal() as db:
@@ -163,7 +171,11 @@ def test_cip_revision_copy_preserves_scope_phase_and_nonbillable_adjustments():
             source_catalog_key = scope.catalog_key
 
         approve(client, rid1)
-        response = client.post(f'/estimate/{rid1}/new-revision', follow_redirects=False)
+        response = client.post(
+            f'/estimate/{rid1}/new-revision',
+            data={'revision_reason': 'Revise approved CIP scope while preserving approved adjustments.'},
+            follow_redirects=False,
+        )
         assert response.status_code == 303
         rid2 = int(response.headers['location'].rsplit('/', 1)[-1])
 
