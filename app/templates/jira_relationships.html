@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set active_tab='schedule' %}
+{% block title %}Jira Relationships — {{ estimate.estimate_number }}{% endblock %}
+{% block content %}
+<div class="estimate-shell">
+  <div class="page-title-row">
+    <div>
+      <h1>Jira Relationships</h1>
+      <div class="subtle">{{ rev.customer or 'Customer not entered' }} · Estimate {{ estimate.estimate_number }} Rev {{ rev.revision_no }}</div>
+    </div>
+    <div class="action-row">
+      <a class="button secondary" href="/estimate/{{ rev.id }}/schedule">Back to Schedule</a>
+      <a class="button secondary" href="/estimate/{{ rev.id }}/jira.csv">Export Jira CSV</a>
+    </div>
+  </div>
+
+  <div class="workbook-bar">Explicit Jira Task Relationships</div>
+  <div class="schedule-note">
+    Relationships are maintained explicitly and are never inferred from task order. Only Schedule tasks that are exported as Jira Stories are available. Regenerating the Schedule replaces task identities and clears these relationships.
+  </div>
+
+  {% if not tasks %}
+    <div class="empty-state">The current Schedule has no Jira-exportable Story tasks.</div>
+  {% else %}
+    {% if not readonly %}
+    <div class="card" style="margin-top:16px;">
+      <h2>Add Relationship</h2>
+      <form method="post" action="/estimate/{{ rev.id }}/jira-relationships">
+        <input type="hidden" name="action" value="add">
+        <div class="form-grid">
+          <label>Source Story
+            <select name="source_task_id" required>
+              <option value="">Select task</option>
+              {% for t in tasks %}<option value="{{ t.id }}">{{ t.task_id }} — {{ t.task|ci_text }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Relationship
+            <select name="relationship_type" required>
+              {% for key, label in relationship_labels.items() %}<option value="{{ key }}">{{ label }} (max {{ relationship_capacity[key] }})</option>{% endfor %}
+            </select>
+          </label>
+          <label>Target Story
+            <select name="target_task_id" required>
+              <option value="">Select task</option>
+              {% for t in tasks %}<option value="{{ t.id }}">{{ t.task_id }} — {{ t.task|ci_text }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="form-footer"><button class="button primary" type="submit">Add Jira Relationship</button></div>
+      </form>
+    </div>
+    {% else %}
+      <div class="schedule-note">This estimate revision is {{ rev.status|ci_term }}. Jira relationships are read-only.</div>
+    {% endif %}
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Current Relationships</h2>
+      {% if relationships %}
+      <table>
+        <thead><tr><th>Source Story</th><th>Relationship</th><th>Target Story</th><th></th></tr></thead>
+        <tbody>
+        {% for relationship in relationships %}
+          {% set source = task_by_id[relationship.source_task_id] %}
+          {% set target = task_by_id[relationship.target_task_id] %}
+          <tr>
+            <td>{{ source.task_id }} — {{ source.task|ci_text }}</td>
+            <td>{{ relationship_labels[relationship.relationship_type] }}</td>
+            <td>{{ target.task_id }} — {{ target.task|ci_text }}</td>
+            <td>
+              {% if not readonly %}
+              <form method="post" action="/estimate/{{ rev.id }}/jira-relationships" onsubmit="return confirm('Remove this Jira relationship?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="relationship_id" value="{{ relationship.id }}">
+                <button class="button secondary" type="submit">Remove</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">No explicit Jira relationships are defined for this Schedule.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
