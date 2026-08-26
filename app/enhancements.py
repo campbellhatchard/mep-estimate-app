@@ -122,9 +122,24 @@ def _ordered_roles(form) -> list[str]:
 
 
 def _set_roles(user: User, roles: list[str]):
-    user.roles.clear()
+    """Apply role changes without delete/reinsert churn for unchanged assignments.
+
+    PostgreSQL enforces uq_user_role during flush. Clearing the relationship and
+    immediately appending the same roles can schedule INSERTs before DELETEs and
+    collide with existing (user_id, role) rows. Diffing retains unchanged rows,
+    removes only roles no longer selected, and inserts only genuinely new roles.
+    """
+    desired = set(roles)
+    existing = {assignment.role: assignment for assignment in user.roles if assignment.role}
+
+    for role, assignment in list(existing.items()):
+        if role not in desired:
+            user.roles.remove(assignment)
+
     for role in roles:
-        user.roles.append(UserRole(role=role))
+        if role not in existing:
+            user.roles.append(UserRole(role=role))
+
     # Retain one role in the legacy field for backward compatibility with old exports/code.
     user.role = roles[0] if roles else "READ_ONLY"
 
