@@ -79,10 +79,10 @@ def _persisted_tasks(db: Session, revision_id: int) -> list[ScheduleTask]:
     )
 
 
-def _csv_response(text: str, filename: str) -> StreamingResponse:
-    # UTF-8 BOM keeps Excel-compatible CSV opening predictable without changing
-    # the logical field values or header contract.
-    data = ("\ufeff" + text).encode("utf-8")
+def _csv_response(text: str, filename: str, *, bom: bool = False) -> StreamingResponse:
+    # Jira historically used plain UTF-8 and downstream imports depend on the exact
+    # first header value. Schedule CSV may opt into a BOM for predictable Excel opening.
+    data = text.encode("utf-8-sig" if bom else "utf-8")
     return StreamingResponse(
         io.BytesIO(data),
         media_type="text/csv; charset=utf-8",
@@ -165,6 +165,7 @@ def register_schedule_exports(app, core) -> None:
         return _csv_response(
             out.getvalue(),
             f"{product_prefix}Estimate-{rev.estimate.estimate_number}-Rev-{rev.revision_no}-Schedule.csv",
+            bom=True,
         )
 
     @app.get("/estimate/{rid}/jira.csv")
