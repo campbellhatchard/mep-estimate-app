@@ -127,7 +127,11 @@ def test_new_draft_revision_cannot_delete_existing_approved_history():
         rid = create_estimate(client, "MEP")
         assert client.post(f"/estimate/{rid}/status/submit", follow_redirects=False).status_code == 303
         assert client.post(f"/estimate/{rid}/status/approve", follow_redirects=False).status_code == 303
-        new_revision = client.post(f"/estimate/{rid}/new-revision", follow_redirects=False)
+        new_revision = client.post(
+            f"/estimate/{rid}/new-revision",
+            data={"revision_reason": "Create a controlled draft while retaining approved history."},
+            follow_redirects=False,
+        )
         assert new_revision.status_code == 303
         new_rid = int(new_revision.headers["location"].rsplit("/", 1)[-1])
 

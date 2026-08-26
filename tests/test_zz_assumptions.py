@@ -46,7 +46,11 @@ def test_assumptions_are_revision_scoped_locked_and_carried_forward():
         assert client.post(f'/estimate/{rid1}/assumptions').status_code == 409
         assert client.post(f'/estimate/{rid1}/assumptions/{aid}', data={'text': 'Changed'}).status_code == 409
 
-        response = client.post(f'/estimate/{rid1}/new-revision', follow_redirects=False)
+        response = client.post(
+            f'/estimate/{rid1}/new-revision',
+            data={'revision_reason': 'Revise approved estimate while carrying forward current assumptions.'},
+            follow_redirects=False,
+        )
         assert response.status_code == 303
         rid2 = int(response.headers['location'].rsplit('/', 1)[-1])
         with SessionLocal() as db:
