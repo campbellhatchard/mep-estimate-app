@@ -182,17 +182,19 @@ def test_pdf_watermark_adds_draft_text_to_every_review_page():
         assert "DRAFT" in (page.extract_text() or "")
 
 
-def test_release_wiring_and_sow_review_ui_are_v03150():
+def test_release_wiring_and_sow_review_ui_match_current_baseline():
     run = Path("app/run.py").read_text(encoding="utf-8")
     base = Path("app/templates/base.html").read_text(encoding="utf-8")
     mep = Path("app/templates/sow.html").read_text(encoding="utf-8")
     cip = Path("app/templates/cip_sow.html").read_text(encoding="utf-8")
     render = Path("render.yaml").read_text(encoding="utf-8")
     control = Path("app/sow_word_control.py").read_text(encoding="utf-8")
+    small_project_control = Path("app/small_project_word_runtime.py").read_text(encoding="utf-8")
 
-    assert 'app.version = "0.3.15.0"' in run
+    assert 'app.version = "0.3.17.0"' in run
     assert "install_sow_review_pdf_watermark()" in run
     assert "register_controlled_sow_word(app, core)" in run
+    assert "install_small_project_word_dispatch()" in run
     assert "Draft Word SOW" not in base
     for template in (mep, cip):
         assert "<h2>SOW Review</h2>" in template
@@ -207,3 +209,5 @@ def test_release_wiring_and_sow_review_ui_are_v03150():
     assert "MEP_NET_NEW" in control
     assert "SOW_TEMPLATE_CIP_NET_NEW" in control
     assert "small_project" not in control.casefold()
+    assert "is_small_project_sow" in small_project_control
+    assert "verify_small_project_approved_content" in small_project_control
