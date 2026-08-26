@@ -223,6 +223,9 @@ def test_finalize_requires_selected_deliverable_and_hypercare_reconciliation():
             baseline = next(row for row in cfg.deliverables if row.deliverable_key == "BASELINE_APPS")
             baseline.include = True
             baseline.scope_description = "Approved scoped configuration."
+            # v0.3.19 makes ERP/System Version mandatory for every MEP Small Project
+            # SOW so the connection target is explicit even when Appendix A is omitted.
+            sow.erp_version = "9.2.8"
             db.commit()
 
         finalized = client.post(f"/sow/{sid}/finalize", follow_redirects=False)

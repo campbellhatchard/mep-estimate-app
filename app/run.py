@@ -16,6 +16,8 @@ from .detail_preview import register_detail_preview
 from .precision_runtime import install_calculation_precision, register_precision_routes, register_precision_startup
 from .calculation_explain import install_calculation_explanations
 from .tools_admin_runtime import register_tools_admin_runtime
+from .mep_sow_erp_runtime import install_mep_sow_erp_wording
+from .sow_lineage_runtime import register_sow_lineage_carry_forward
 # Apply controlled SOW layout migrations before SOW registration.
 from . import sow_layout_v2  # noqa: F401
 from . import sow_layout_v3  # noqa: F401
@@ -41,7 +43,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.18.0"
+app.version = "0.3.19.0"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
@@ -68,6 +70,9 @@ register_cip(app, core, core.generate_schedule)
 # Decorate calculation output with user-facing derivation evidence. This wraps read-time
 # calculation results only; recalculation/storage functions remain untouched.
 install_calculation_explanations(core)
+# Version-gated MEP SOW document composition. Existing controlled SOWs remain renderer v1;
+# new v0.3.19 SOWs opt into v2 ERP/system-version wording.
+install_mep_sow_erp_wording(core)
 # Product dispatch now exists; add calculation and detail previews using the same corrected
 # calculation engine as Save so unsaved changes produce production-equivalent results.
 register_precision_routes(app, core)
@@ -100,6 +105,9 @@ register_small_project_sow_templates(app)
 # Small Project dispatch is layered after both accepted Net New product routes. It intercepts
 # only pinned MEP_SMALL_PROJECT / CIP_SMALL_PROJECT SOWs and delegates every other route.
 register_small_project_sow_workflow(app, core)
+# Wrap the final four-family create route. New SOWs enter composition v2 and can inherit only
+# compatible user-authored content from the immediately preceding estimate revision.
+register_sow_lineage_carry_forward(app, core)
 # Complete the Tools Admin boundary after all shared Calculation Data and SOW-template routes
 # exist, including the legacy template-download route.
 register_tools_admin_runtime(app, core)

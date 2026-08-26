@@ -32,6 +32,8 @@
         <label>Product<input value="{{product_type}}" disabled></label>
         {% if product_type=='MEP' %}
         <label>MEP Installation Mode<select name="install_mode" {% if readonly %}disabled{% endif %}>{% for x in install_modes %}<option value="{{x}}" {% if config.install_mode==x %}selected{% endif %}>{{'On Premises' if x=='On_Prem' else x}}</option>{% endfor %}</select></label>
+        <label>Connected ERP / System<input value="{{rev.erp|ci_term}}" disabled></label>
+        <label>ERP / System Version<input name="erp_version" value="{{sow.erp_version}}" placeholder="Version MEP will connect to" {% if readonly %}disabled{% endif %}></label>
         {% else %}
         <label>Platform Hosting<input value="Existing Cloud Inventory hosted deployment" disabled></label>
         {% endif %}
@@ -120,7 +122,7 @@
       </div>
       <div class="sow-grid">
         <label>{{'CIP' if product_type=='CIP' else 'MEP'}} Product Version<input name="mep_product_version" value="{{sow.mep_product_version}}" {% if readonly %}disabled{% endif %}></label>
-        <label>ERP / System Version<input name="erp_version" value="{{sow.erp_version}}" {% if readonly %}disabled{% endif %}></label>
+        {% if product_type=='CIP' %}<label>ERP / System Version<input name="erp_version" value="{{sow.erp_version}}" {% if readonly %}disabled{% endif %}></label>{% endif %}
         <label>ERP Base Code Version<input name="erp_base_code_version" value="{{sow.erp_base_code_version}}" {% if readonly %}disabled{% endif %}></label>
         <label>ERP Tools Release<input name="erp_tools_release" value="{{sow.erp_tools_release}}" {% if readonly %}disabled{% endif %}></label>
         <label>ERP Application Server OS / Version<input name="erp_os_version" value="{{sow.erp_os_version}}" {% if readonly %}disabled{% endif %}></label>

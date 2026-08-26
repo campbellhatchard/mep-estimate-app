@@ -43,6 +43,9 @@ class SOW(Base):
     estimate_revision_id: Mapped[int] = mapped_column(ForeignKey("estimate_revisions.id"), index=True)
     template_version_id: Mapped[int] = mapped_column(ForeignKey("sow_template_versions.id"), index=True)
     sow_revision_no: Mapped[int] = mapped_column(Integer, default=1)
+    # Renderer/composition behavior is persisted so later document enhancements never
+    # retroactively change an approved historical SOW's canonical content/hash.
+    composition_version: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(30), default="DRAFT", index=True)
     sow_date: Mapped[date] = mapped_column(Date)
     agreement_type: Mapped[str] = mapped_column(String(160), default="Software as a Service Agreement")
