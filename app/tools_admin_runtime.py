@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from .cip_domain import _take_route
+from .cip_domain import _take_route, configuration_product
 from .database import get_db
 from .models import ConfigItem
 from .services.audit import record
@@ -15,11 +15,18 @@ def _bool_form(form, key: str) -> bool:
     return str(form.get(key, "")).lower() in ("1", "true", "yes", "on")
 
 
+def _data_redirect(version_id: int, key: str, db: Session) -> RedirectResponse:
+    product = configuration_product(db, version_id)
+    return RedirectResponse(
+        f"/data?product={product}&version={version_id}&q={key}", 303
+    )
+
+
 def register_tools_admin_runtime(app, core) -> None:
     """Apply the Tools Admin authorization boundary to shared legacy routes.
 
     CIP configuration-version routes and the four-family SOW template administration
-    routes are registered elsewhere.  These three shared routes remain in the legacy
+    routes are registered elsewhere. These three shared routes remain in the legacy
     application layer, so replace them here after all product/admin route registration.
     """
     _take_route(app, "/data/item/{item_id}", "POST")
@@ -62,11 +69,7 @@ def register_tools_admin_runtime(app, core) -> None:
             reason=reason,
         )
         db.commit()
-        product = "CIP" if getattr(version, "configuration_product", None) else None
-        suffix = f"&product={product}" if product else ""
-        return RedirectResponse(
-            f"/data?version={version.id}&q={item.key}{suffix}", 303
-        )
+        return _data_redirect(version.id, item.key, db)
 
     @app.post("/data/item/new")
     async def new_config_item(request: Request, db: Session = Depends(get_db)):
@@ -114,7 +117,7 @@ def register_tools_admin_runtime(app, core) -> None:
             reason=reason,
         )
         db.commit()
-        return RedirectResponse(f"/data?version={version_id}&q={key}", 303)
+        return _data_redirect(version_id, key, db)
 
     @app.get("/admin/sow-templates/{tid}/download")
     def download_sow_template(
