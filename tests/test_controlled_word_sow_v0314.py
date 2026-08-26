@@ -193,7 +193,7 @@ def test_release_wiring_and_sow_review_ui_match_current_baseline():
     small_project_control = Path("app/small_project_word_runtime.py").read_text(encoding="utf-8")
 
     assert "configure_application(app, core)" in run
-    assert 'RELEASE_VERSION = "0.3.23.0"' in bootstrap
+    assert 'RELEASE_VERSION = "0.3.24.0"' in bootstrap
     assert "install_sow_review_pdf_watermark()" in bootstrap
     assert "register_controlled_sow_word(app, core)" in bootstrap
     assert "install_small_project_word_dispatch()" in bootstrap
