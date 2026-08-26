@@ -24,6 +24,7 @@ def test_v0325_release_wiring_and_controlled_jira_capacity():
     )
     assert "register_jira_relationship_routes(app, core)" in bootstrap
     assert "/estimate/{{ rev.id }}/jira-relationships" in schedule
+    # v0.3.23 established deprecated UTC defaults as a release-blocking warning class.
     assert "datetime.utcnow" not in jira_models
     assert "default=utc_now" in jira_models
     assert 'revision = "f84a1d6c27b3"' in migration
