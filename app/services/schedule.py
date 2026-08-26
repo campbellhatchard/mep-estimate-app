@@ -3,6 +3,7 @@ import json, re
 from pathlib import Path
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
+from ..jira_models import ScheduleTaskRelationship
 from ..models import EstimateRevision, ScheduleTask
 from .calculation import calculation
 
@@ -25,6 +26,11 @@ def business_add(start: date, days: int) -> date:
 def generate_schedule(db: Session, rev: EstimateRevision, replace=True):
     calc_lines, summary, details, detail_summ = calculation(db,rev)
     if replace:
+        # Jira relationships are anchored to persisted ScheduleTask identities. Regeneration
+        # replaces those tasks, so remove relationships first rather than leaving stale links.
+        db.query(ScheduleTaskRelationship).filter(
+            ScheduleTaskRelationship.revision_id==rev.id
+        ).delete(synchronize_session=False)
         db.query(ScheduleTask).filter(ScheduleTask.revision_id==rev.id).delete(synchronize_session=False)
     calc_by_norm={norm(x.description):x.extended_hours for x in calc_lines}
     # aliases where Schedule wording differs slightly from Calculations wording.
