@@ -15,6 +15,18 @@ from .services.audit import record
 CONFIG_ADMIN_ROLES = ("ADMIN", "TOOLS_ADMIN")
 
 
+def _next_config_version_name(db: Session, product: str) -> str:
+    """Return a readable, unique draft name even for multiple creations in one minute."""
+    stamp = datetime.utcnow().strftime("%Y.%m.%d.%H%M")
+    base_name = f"{product} Estimate Model {stamp}"
+    name = base_name
+    suffix = 2
+    while db.query(ConfigurationVersion.id).filter(ConfigurationVersion.name == name).first():
+        name = f"{base_name}-{suffix:02d}"
+        suffix += 1
+    return name
+
+
 def register_config_routes(app, core):
     # Replace the legacy generic configuration handlers so MEP and CIP use one
     # product-aware authorization boundary for all controlled mutations.
@@ -44,8 +56,8 @@ def register_config_routes(app, core):
     async def new_config_version(request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db); core.require_role(user, *CONFIG_ADMIN_ROLES); form = await request.form(); product = str(form.get("product", PRODUCT_MEP)).upper()
         if product not in (PRODUCT_MEP, PRODUCT_CIP): raise HTTPException(400, "Unknown configuration product")
-        src = active_config_for_product(db, product); stamp = datetime.utcnow().strftime("%Y.%m.%d.%H%M")
-        version = ConfigurationVersion(name=f"{product} Estimate Model {stamp}", status="DRAFT", created_by=user.id, change_reason=f"Draft {product} configuration cloned from active model")
+        src = active_config_for_product(db, product)
+        version = ConfigurationVersion(name=_next_config_version_name(db, product), status="DRAFT", created_by=user.id, change_reason=f"Draft {product} configuration cloned from active model")
         db.add(version); db.flush(); db.add(ConfigurationProduct(config_version_id=version.id, product_type=product))
         for item in db.query(ConfigItem).filter(ConfigItem.config_version_id == src.id):
             db.add(ConfigItem(config_version_id=version.id, category=item.category, key=item.key, label=item.label, value_number=item.value_number, value_text=item.value_text, value_type=item.value_type, unit=item.unit, description=item.description, parent_key=item.parent_key, sort_order=item.sort_order, active=item.active))
