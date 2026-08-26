@@ -31,7 +31,8 @@
   <nav class="global-nav">
     <a href="/estimates">Estimates</a><a href="/data">Calculation Data</a>
     {% if user.has_role('ADMIN','APPROVER','SOW_APPROVER') %}<a href="/approvals">Approvals</a>{% endif %}
-    {% if user.has_role('ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a><a href="/admin/users">Users</a>{% endif %}
+    {% if user.has_role('ADMIN','TOOLS_ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a>{% endif %}
+    {% if user.has_role('ADMIN') %}<a href="/admin/users">Users</a>{% endif %}
   </nav>
   <details class="mobile-nav-menu">
     <summary aria-label="Open navigation">Menu</summary>
@@ -39,7 +40,8 @@
       <a href="/estimates">Estimates</a>
       <a href="/data">Calculation Data</a>
       {% if user.has_role('ADMIN','APPROVER','SOW_APPROVER') %}<a href="/approvals">Approvals</a>{% endif %}
-      {% if user.has_role('ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a><a href="/admin/users">Users</a>{% endif %}
+      {% if user.has_role('ADMIN','TOOLS_ADMIN') %}<a href="/admin/sow-templates">SOW Templates</a>{% endif %}
+      {% if user.has_role('ADMIN') %}<a href="/admin/users">Users</a>{% endif %}
     </nav>
   </details>
   <div class="userbox"><b>{{ user.username }}</b><span>{{ user.role_names|join(' · ') }}</span><form method="post" action="/logout"><button class="link-button">Sign out</button></form></div>

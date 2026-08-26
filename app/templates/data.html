@@ -5,13 +5,30 @@
 <div class="estimate-shell wide-shell">
   <div class="page-title-row">
     <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. MEP and CIP configuration lifecycles are independent.</div></div>
-    {% if user.has_role('ADMIN') %}
-      <div class="action-row">
-      {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><input type="hidden" name="product" value="{{product_type}}"><button class="button primary">Create {{product_type}} Draft from Active</button></form>{% endif %}
-      {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this {{product_type}} configuration? The current Active {{product_type}} version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
-      </div>
-    {% endif %}
+    <div class="action-row">
+      <button type="button" class="button secondary" onclick="document.getElementById('calculationDataHelp').showModal()">Help</button>
+      {% if user.has_role('ADMIN','TOOLS_ADMIN') %}
+        {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><input type="hidden" name="product" value="{{product_type}}"><button class="button primary">Create {{product_type}} Draft from Active</button></form>{% endif %}
+        {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this {{product_type}} configuration? The current Active {{product_type}} version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
+      {% endif %}
+    </div>
   </div>
+
+  <dialog id="calculationDataHelp" class="card" style="max-width:760px;width:min(760px,92vw);border:1px solid #c7d1d5;border-radius:6px;">
+    <div class="page-title-row"><div><h2>Changing a Calculation Data Element</h2><div class="subtle">Controlled changes are versioned so approved estimates remain reproducible.</div></div><button type="button" class="button ghost" onclick="document.getElementById('calculationDataHelp').close()">Close</button></div>
+    <ol style="line-height:1.55;padding-left:1.4rem;">
+      <li><strong>Do not edit the Active version in place.</strong> Calculation Data is version controlled.</li>
+      <li>If a change is required, create a <strong>Draft</strong> configuration from the current Active {{product_type}} model, or select an existing Draft.</li>
+      <li>Use Search and Category filters to locate the Calculation Data element you need to change.</li>
+      <li>Review the element's category, internal key, current value/type, description, scope and active status before changing it.</li>
+      <li>Change only the controlled value or metadata required. Calculation formulas are source controlled and are not edited on this page.</li>
+      <li>Enter the mandatory <strong>Change Reason</strong> describing what changed and why.</li>
+      <li>Save the change and review dependent estimates/calculations or agreed test scenarios to confirm the expected impact.</li>
+      <li>When the Draft has been reviewed under the current governance process, activate it. Activation retires the prior Active version for this product.</li>
+      <li>Existing approved estimate revisions remain pinned to their historical configuration and calculation engine. Only new estimates or explicitly rebased revisions use the newly Active configuration.</li>
+    </ol>
+    {% if not user.has_role('ADMIN','TOOLS_ADMIN') %}<p class="subtle"><strong>Access:</strong> You may review Calculation Data, but only an Administrator or Tools Admin can create, edit or activate configuration versions.</p>{% else %}<p class="subtle"><strong>Access:</strong> Administrator and Tools Admin roles are authorized to administer Calculation Data.</p>{% endif %}
+  </dialog>
 
   <div class="product-config-tabs">
     <a class="button {% if product_type=='MEP' %}primary{% endif %}" href="/data?product=MEP">MEP Calculation Data</a>
@@ -28,7 +45,7 @@
     {% if version.change_reason %}<span class="subtle">{{ version.change_reason }}</span>{% endif %}
   </div>
 
-  {% if product_type=='CIP' and user.has_role('ADMIN') and version.status=='DRAFT' %}
+  {% if product_type=='CIP' and user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}
   <details class="admin-add"><summary>Add New CIP Software Release</summary>
     <form method="post" action="/cip/data/release/new" class="admin-grid">
       <input type="hidden" name="version_id" value="{{version.id}}">
@@ -36,7 +53,7 @@
       <label class="span-2">Reason<input name="reason" required placeholder="Reason for adding the software release"></label>
       <button class="button primary" type="submit">Add Release &amp; Clone Current Catalog</button>
     </form>
-    <div class="subtle">The current latest Desktop, Mobile and Integration catalogs are copied into the new release. Administrators can then adjust availability and effort before activation.</div>
+    <div class="subtle">The current latest Desktop, Mobile and Integration catalogs are copied into the new release. Administrators and Tools Admins can then adjust availability and effort before activation.</div>
   </details>
   {% endif %}
 
@@ -48,7 +65,7 @@
     <button class="button secondary">Search</button><a class="button ghost" href="/data?product={{product_type}}&version={{ version.id }}">Clear</a>
   </form>
 
-  {% if user.has_role('ADMIN') and version.status == 'DRAFT' %}
+  {% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status == 'DRAFT' %}
   <details class="admin-add"><summary>Add New Calculation/Catalog Value</summary>
     <form method="post" action="/data/item/new" class="admin-grid">
       <input type="hidden" name="version_id" value="{{ version.id }}">
@@ -68,13 +85,13 @@
 
   <div class="data-table-wrap">
   <table class="data-table">
-    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.has_role('ADMIN') and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
+    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
     <tbody>
     {% for item in items %}
       <tr class="{% if not item.active %}inactive-row{% endif %}">
         <td>{{ item.category }}</td><td><strong>{{ item.label|ci_term }}</strong></td><td><code>{{ item.key }}</code></td><td>{{ item.parent_key or '' }}</td>
         <td>{% if item.value_number is not none %}{{ item.value_number }}{% elif item.value_text %}{{ item.value_text }}{% endif %}</td><td>{{ item.value_type }}</td><td>{{ 'Yes' if item.active else 'No' }}</td><td>{{ (item.description or '')|ci_text }}</td>
-        {% if user.has_role('ADMIN') and version.status=='DRAFT' %}<td>
+        {% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}<td>
           <details><summary>Edit</summary><form method="post" action="/data/item/{{ item.id }}" class="compact-edit">
             <label>Name<input name="label" value="{{ item.label }}"></label>
             <label>Numeric<input type="number" step="any" name="value_number" value="{{ item.value_number if item.value_number is not none else '' }}"></label>
