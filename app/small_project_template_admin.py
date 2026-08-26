@@ -29,6 +29,7 @@ ALL_SOW_TEMPLATE_KEYS = (
     SOW_TEMPLATE_MEP_SMALL_PROJECT,
     SOW_TEMPLATE_CIP_SMALL_PROJECT,
 )
+TEMPLATE_ADMIN_ROLES = ("ADMIN", "TOOLS_ADMIN")
 
 
 def _template_meta(template_key: str) -> tuple[str, str, str]:
@@ -67,7 +68,7 @@ def register_small_project_template_admin(app, core) -> None:
     @app.get("/admin/sow-templates", response_class=HTMLResponse)
     def sow_templates_admin(request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN")
+        core.require_role(user, *TEMPLATE_ADMIN_ROLES)
 
         def versions(template_key: str):
             return (
@@ -100,7 +101,7 @@ def register_small_project_template_admin(app, core) -> None:
         db: Session = Depends(get_db),
     ):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN")
+        core.require_role(user, *TEMPLATE_ADMIN_ROLES)
         if template_key not in ALL_SOW_TEMPLATE_KEYS:
             raise HTTPException(400, "Unknown SOW template type.")
         if not file.filename or not file.filename.lower().endswith(".docx"):
@@ -156,7 +157,7 @@ def register_small_project_template_admin(app, core) -> None:
         tid: int, request: Request, db: Session = Depends(get_db)
     ):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN")
+        core.require_role(user, *TEMPLATE_ADMIN_ROLES)
         row = db.get(SOWTemplateVersion, tid)
         if not row:
             raise HTTPException(404, "SOW template version not found")
