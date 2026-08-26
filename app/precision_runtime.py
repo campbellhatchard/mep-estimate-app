@@ -15,6 +15,7 @@ from .database import SessionLocal, get_db
 from .models import CalculationAdjustment, ConfigurationVersion, EstimateRevision
 from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP, PRODUCT_MEP
 from .cip_domain import revision_product
+from .route_architecture import remove_route
 from .services.audit import record
 from .services.calculation_v101 import (
     ENGINE_VERSION as MEP_ENGINE_VERSION,
@@ -178,9 +179,7 @@ def register_precision_routes(app, core):
 
     # Replace the PDF route after product dispatch registration so HTML and PDF use the same
     # precision rules and historical calculation engine boundary.
-    for route in list(app.router.routes):
-        if getattr(route, "path", None) == "/estimate/{rid}/pdf" and "GET" in (getattr(route, "methods", set()) or set()):
-            app.router.routes.remove(route)
+    remove_route(app, "/estimate/{rid}/pdf", "GET")
 
     @app.get("/estimate/{rid}/pdf")
     def precision_pdf(rid: int, request: Request, db: Session = Depends(get_db)):

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from .database import Base, get_db
 from .models import ConfigItem, Estimate, EstimateCustomApplication, EstimateRevision
+from .route_architecture import remove_route
 from .services.audit import record
 
 DEFAULT_APP_TIMEZONE = "America/Chicago"
@@ -76,10 +77,7 @@ def next_estimate_number(db: Session, business_date: date | None = None) -> str:
 def _remove_legacy_create_route(app) -> None:
     """Remove the v0.1/v0.2 create route before registering the numbered version."""
 
-    for route in list(app.router.routes):
-        methods = getattr(route, "methods", set()) or set()
-        if getattr(route, "path", None) == "/estimates/new" and "POST" in methods:
-            app.router.routes.remove(route)
+    remove_route(app, "/estimates/new", "POST")
 
 
 def register_numbered_estimate_route(app, core) -> None:
