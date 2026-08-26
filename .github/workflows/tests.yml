@@ -31,6 +31,7 @@ jobs:
             tests/test_zzza_sow_queue.py \
             tests/test_zzzb_sow_approval.py \
             tests/test_zzzc_sow_lock.py \
-            tests/test_zzzz_cip_sow.py
+            tests/test_zzzz_cip_sow.py \
+            tests/test_sow_four_family_matrix.py
       - name: Run SOW assumptions section test
         run: PYTHONPATH=. pytest -q tests/test_zzz_sow.py::test_estimate_assumptions_feed_sow_section_414
