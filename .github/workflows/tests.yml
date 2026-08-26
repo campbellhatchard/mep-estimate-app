@@ -6,14 +6,18 @@ on:
     branches:
       - 'main'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -24,13 +28,13 @@ jobs:
           rm -f /tmp/mep_estimate_migration.db
           DATABASE_URL=sqlite:////tmp/mep_estimate_migration.db PYTHONPATH=. alembic upgrade head
       - name: Run MEP and CIP regression tests
-        run: PYTHONPATH=. pytest -q --ignore=tests/test_zzz_sow.py
+        run: PYTHONPATH=. pytest -q -ra --strict-config --ignore=tests/test_zzz_sow.py
       - name: Run focused SOW approval lifecycle gates
         run: |
-          PYTHONPATH=. pytest -q \
+          PYTHONPATH=. pytest -q -ra --strict-config \
             tests/test_zzza_sow_queue.py \
             tests/test_zzzb_sow_approval.py \
             tests/test_zzzc_sow_lock.py \
             tests/test_zzzz_cip_sow.py
       - name: Run SOW assumptions section test
-        run: PYTHONPATH=. pytest -q tests/test_zzz_sow.py::test_estimate_assumptions_feed_sow_section_414
+        run: PYTHONPATH=. pytest -q -ra --strict-config tests/test_zzz_sow.py::test_estimate_assumptions_feed_sow_section_414

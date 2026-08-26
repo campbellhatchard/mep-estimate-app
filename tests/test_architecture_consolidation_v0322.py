@@ -16,7 +16,7 @@ from app.run import app
 
 
 def test_release_uses_single_bootstrap_and_explicit_final_route_owners():
-    assert app.version == "0.3.22.0"
+    assert app.version == "0.3.23.0"
     assert_final_route_owners(app)
 
     for owner in FINAL_ROUTE_OWNERS:

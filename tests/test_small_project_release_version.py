@@ -2,4 +2,4 @@ from app.run import app
 
 
 def test_estimator_release_version():
-    assert app.version == "0.3.22.0"
+    assert app.version == "0.3.23.0"
