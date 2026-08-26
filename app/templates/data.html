@@ -7,15 +7,20 @@
     <div><h1>Calculation Data</h1><div class="subtle">Searchable, versioned business factors and catalogs. MEP and CIP configuration lifecycles are independent.</div></div>
     <div class="action-row">
       <button type="button" class="button secondary" onclick="document.getElementById('calculationDataHelp').showModal()">Help</button>
-      {% if user.has_role('ADMIN','TOOLS_ADMIN') %}
-        {% if version.status == 'ACTIVE' %}<form method="post" action="/data/version/new"><input type="hidden" name="product" value="{{product_type}}"><button class="button primary">Create {{product_type}} Draft from Active</button></form>{% endif %}
-        {% if version.status == 'DRAFT' %}<form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this {{product_type}} configuration? The current Active {{product_type}} version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Draft</button></form>{% endif %}
+      {% if can_prepare_config and version.status == 'ACTIVE' %}
+        <form method="post" action="/data/version/new"><input type="hidden" name="product" value="{{product_type}}"><button class="button primary">Create {{product_type}} Draft from Active</button></form>
+      {% endif %}
+      {% if can_prepare_config and version.status == 'DRAFT' %}
+        <form method="post" action="/data/version/{{ version.id }}/submit" onsubmit="return confirm('Submit this {{product_type}} configuration for independent review? It will be locked until approved, rejected, or reopened after rejection.');"><button class="button primary">Submit for Review</button></form>
+      {% endif %}
+      {% if can_activate_config and version.status == 'APPROVED' %}
+        <form method="post" action="/data/version/{{ version.id }}/activate" onsubmit="return confirm('Activate this independently approved {{product_type}} configuration? The current Active {{product_type}} version will be retired. Existing estimate revisions remain pinned to their original version.');"><button class="button primary">Activate Approved Version</button></form>
       {% endif %}
     </div>
   </div>
 
   <dialog id="calculationDataHelp" class="card" style="max-width:760px;width:min(760px,92vw);border:1px solid #c7d1d5;border-radius:6px;">
-    <div class="page-title-row"><div><h2>Changing a Calculation Data Element</h2><div class="subtle">Controlled changes are versioned so approved estimates remain reproducible.</div></div><button type="button" class="button ghost" onclick="document.getElementById('calculationDataHelp').close()">Close</button></div>
+    <div class="page-title-row"><div><h2>Changing a Calculation Data Element</h2><div class="subtle">Controlled changes are versioned and independently approved so historical estimates remain reproducible.</div></div><button type="button" class="button ghost" onclick="document.getElementById('calculationDataHelp').close()">Close</button></div>
     <ol style="line-height:1.55;padding-left:1.4rem;">
       <li><strong>Do not edit the Active version in place.</strong> Calculation Data is version controlled.</li>
       <li>If a change is required, create a <strong>Draft</strong> configuration from the current Active {{product_type}} model, or select an existing Draft.</li>
@@ -24,10 +29,12 @@
       <li>Change only the controlled value or metadata required. Calculation formulas are source controlled and are not edited on this page.</li>
       <li>Enter the mandatory <strong>Change Reason</strong> describing what changed and why.</li>
       <li>Save the change and review dependent estimates/calculations or agreed test scenarios to confirm the expected impact.</li>
-      <li>When the Draft has been reviewed under the current governance process, activate it. Activation retires the prior Active version for this product.</li>
+      <li>Submit the Draft for independent review. A user who created, edited, reopened or submitted the version cannot approve or reject it.</li>
+      <li>The independent reviewer must record a review reason and either <strong>Approve</strong> or <strong>Reject</strong> the version. Rejected versions are locked until explicitly reopened as Draft.</li>
+      <li>Only an <strong>Approved</strong> configuration can be activated. Activation retires the prior Active version for this product.</li>
       <li>Existing approved estimate revisions remain pinned to their historical configuration and calculation engine. Only new estimates or explicitly rebased revisions use the newly Active configuration.</li>
     </ol>
-    {% if not user.has_role('ADMIN','TOOLS_ADMIN') %}<p class="subtle"><strong>Access:</strong> You may review Calculation Data, but only an Administrator or Tools Admin can create, edit or activate configuration versions.</p>{% else %}<p class="subtle"><strong>Access:</strong> Administrator and Tools Admin roles are authorized to administer Calculation Data.</p>{% endif %}
+    {% if not user.has_role('ADMIN','TOOLS_ADMIN') %}<p class="subtle"><strong>Access:</strong> You may review Calculation Data, but only an Administrator or Tools Admin can prepare, review or activate configuration versions.</p>{% else %}<p class="subtle"><strong>Governance:</strong> Administrator and Tools Admin roles may participate, but separation of duties prevents any preparer from reviewing the same version. There is no emergency self-approval bypass.</p>{% endif %}
   </dialog>
 
   <div class="product-config-tabs">
@@ -41,11 +48,57 @@
       <input type="hidden" name="product" value="{{product_type}}">
       <select name="version" onchange="this.form.submit()">{% for v in versions %}<option value="{{ v.id }}" {% if v.id==version.id %}selected{% endif %}>{{ v.name }} — {{ v.status }}</option>{% endfor %}</select>
     </form>
-    <span class="status-badge status-{{ version.status|lower }}">{{ version.status }}</span>
+    <span class="status-badge status-{{ version.status|lower }}">{{ version.status|replace('_',' ') }}</span>
     {% if version.change_reason %}<span class="subtle">{{ version.change_reason }}</span>{% endif %}
   </div>
 
-  {% if product_type=='CIP' and user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}
+  <div class="card" style="margin:12px 0;padding:14px 16px;">
+    <div class="page-title-row" style="align-items:flex-start;">
+      <div>
+        <h2 style="margin:0 0 6px 0;font-size:1.05rem;">Configuration Governance</h2>
+        <div class="subtle">
+          Prepared by: {{ prepared_by_names|join(', ') if prepared_by_names else 'System / legacy configuration' }}
+          {% if version.submitted_by %} · Submitted by: {{ governance_usernames.get(version.submitted_by, 'User ' ~ version.submitted_by) }}{% endif %}
+          {% if version.reviewed_by %} · Reviewed by: {{ governance_usernames.get(version.reviewed_by, 'User ' ~ version.reviewed_by) }}{% endif %}
+          {% if version.approved_by %} · Approved by: {{ governance_usernames.get(version.approved_by, 'User ' ~ version.approved_by) }}{% endif %}
+        </div>
+      </div>
+      <div><span class="status-badge status-{{ (version.approval_status or version.status)|lower }}">{{ (version.approval_status or version.status)|replace('_',' ') }}</span></div>
+    </div>
+
+    {% if version.status == 'PENDING_REVIEW' %}
+      {% if can_review_config %}
+        <div class="subtle" style="margin-top:10px;">Record the independent review evidence. A review reason is required for both approval and rejection.</div>
+        <div class="action-row" style="margin-top:8px;align-items:flex-end;">
+          <form method="post" action="/data/version/{{ version.id }}/review" class="inline-form">
+            <input type="hidden" name="action" value="approve">
+            <label>Review reason<input name="reason" required placeholder="Validation performed / approval basis"></label>
+            <button class="button primary" type="submit">Approve Configuration</button>
+          </form>
+          <form method="post" action="/data/version/{{ version.id }}/review" class="inline-form">
+            <input type="hidden" name="action" value="reject">
+            <label>Rejection reason<input name="reason" required placeholder="Required correction or control failure"></label>
+            <button class="button secondary" type="submit">Reject Configuration</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="subtle" style="margin-top:10px;"><strong>Independent review required.</strong> You cannot review this version because you participated in its preparation or do not hold an authorized governance role.</div>
+      {% endif %}
+    {% elif version.status == 'REJECTED' and can_prepare_config %}
+      <form method="post" action="/data/version/{{ version.id }}/reopen" class="inline-form" style="margin-top:10px;align-items:flex-end;">
+        <label>Reopen reason<input name="reason" required placeholder="How the rejection will be addressed"></label>
+        <button class="button secondary" type="submit">Reopen as Draft</button>
+      </form>
+    {% elif version.status == 'APPROVED' %}
+      <div class="subtle" style="margin-top:10px;">Independent approval is complete. The version is locked and ready for controlled activation.</div>
+    {% elif version.status == 'ACTIVE' %}
+      <div class="subtle" style="margin-top:10px;">This is the active {{product_type}} Calculation Data model. Existing estimate revisions remain pinned to the version on which they were created.</div>
+    {% elif version.status == 'DRAFT' %}
+      <div class="subtle" style="margin-top:10px;">Draft changes remain editable until submitted for independent review.</div>
+    {% endif %}
+  </div>
+
+  {% if product_type=='CIP' and can_prepare_config and version.status=='DRAFT' %}
   <details class="admin-add"><summary>Add New CIP Software Release</summary>
     <form method="post" action="/cip/data/release/new" class="admin-grid">
       <input type="hidden" name="version_id" value="{{version.id}}">
@@ -53,7 +106,7 @@
       <label class="span-2">Reason<input name="reason" required placeholder="Reason for adding the software release"></label>
       <button class="button primary" type="submit">Add Release &amp; Clone Current Catalog</button>
     </form>
-    <div class="subtle">The current latest Desktop, Mobile and Integration catalogs are copied into the new release. Administrators and Tools Admins can then adjust availability and effort before activation.</div>
+    <div class="subtle">The current latest Desktop, Mobile and Integration catalogs are copied into the new release. Administrators and Tools Admins can then adjust availability and effort before submission for review.</div>
   </details>
   {% endif %}
 
@@ -65,7 +118,7 @@
     <button class="button secondary">Search</button><a class="button ghost" href="/data?product={{product_type}}&version={{ version.id }}">Clear</a>
   </form>
 
-  {% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status == 'DRAFT' %}
+  {% if can_prepare_config and version.status == 'DRAFT' %}
   <details class="admin-add"><summary>Add New Calculation/Catalog Value</summary>
     <form method="post" action="/data/item/new" class="admin-grid">
       <input type="hidden" name="version_id" value="{{ version.id }}">
@@ -85,13 +138,13 @@
 
   <div class="data-table-wrap">
   <table class="data-table">
-    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
+    <thead><tr><th>Category</th><th>Parameter / Catalog Value</th><th>Internal Key</th><th>Scope</th><th>Value</th><th>Type</th><th>Active</th><th>Description</th>{% if can_prepare_config and version.status=='DRAFT' %}<th>Admin Change</th>{% endif %}</tr></thead>
     <tbody>
     {% for item in items %}
       <tr class="{% if not item.active %}inactive-row{% endif %}">
         <td>{{ item.category }}</td><td><strong>{{ item.label|ci_term }}</strong></td><td><code>{{ item.key }}</code></td><td>{{ item.parent_key or '' }}</td>
         <td>{% if item.value_number is not none %}{{ item.value_number }}{% elif item.value_text %}{{ item.value_text }}{% endif %}</td><td>{{ item.value_type }}</td><td>{{ 'Yes' if item.active else 'No' }}</td><td>{{ (item.description or '')|ci_text }}</td>
-        {% if user.has_role('ADMIN','TOOLS_ADMIN') and version.status=='DRAFT' %}<td>
+        {% if can_prepare_config and version.status=='DRAFT' %}<td>
           <details><summary>Edit</summary><form method="post" action="/data/item/{{ item.id }}" class="compact-edit">
             <label>Name<input name="label" value="{{ item.label }}"></label>
             <label>Numeric<input type="number" step="any" name="value_number" value="{{ item.value_number if item.value_number is not none else '' }}"></label>

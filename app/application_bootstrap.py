@@ -43,7 +43,7 @@ from . import sow_layout_v3  # noqa: F401
 from . import sow_template_reconcile  # noqa: F401
 
 
-RELEASE_VERSION = "0.3.23.0"
+RELEASE_VERSION = "0.3.24.0"
 
 
 def _configure_roles() -> None:

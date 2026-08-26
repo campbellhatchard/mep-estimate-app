@@ -14,8 +14,7 @@ from app.run import app
 from app.warning_hardening import _is_utcnow_callable
 
 
-def test_v0323_release_and_framework_compatibility_boundary_are_active():
-    assert RELEASE_VERSION == "0.3.23.0"
+def test_v0323_hardening_boundary_remains_active():
     assert app.version == RELEASE_VERSION
     assert FastAPI.on_event is _compat_on_event
     assert Jinja2Templates.TemplateResponse is _compat_template_response
