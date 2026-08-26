@@ -33,6 +33,7 @@ from .sow_template_startup import register_sow_template_reconciliation
 from .sow_word_control import register_controlled_sow_word
 from .cip_sow import register_cip_sow
 from .tools_admin_runtime import register_tools_admin_runtime
+from .warning_hardening import install_warning_hardening
 
 # Model/table registration and controlled template migrations are import-time compatibility
 # boundaries. Keep them explicit here rather than scattering side-effect imports in run.py.
@@ -42,7 +43,7 @@ from . import sow_layout_v3  # noqa: F401
 from . import sow_template_reconcile  # noqa: F401
 
 
-RELEASE_VERSION = "0.3.22.0"
+RELEASE_VERSION = "0.3.23.0"
 
 
 def _configure_roles() -> None:
@@ -119,6 +120,11 @@ def _register_sow_capabilities(app, core) -> None:
 
 def configure_application(app, core) -> None:
     """Build the production application in one explicit, regression-protected order."""
+
+    # Warning/persistence hardening is installed before any route is registered or startup
+    # callback can execute. It changes compatibility plumbing only, not calculation/document
+    # behavior or persisted timestamp semantics.
+    install_warning_hardening(core)
 
     _configure_roles()
     app.title = "Cloud Inventory Services Estimator"
