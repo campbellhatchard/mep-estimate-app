@@ -7,12 +7,13 @@
     <div><h1>Schedule</h1><div class="subtle">{{ rev.customer or 'Customer not entered' }} · Estimate {{ estimate.estimate_number }} Rev {{ rev.revision_no }} · Generated from estimate</div></div>
     <div class="action-row">
       {% if rev.status == 'DRAFT' %}<form method="post" action="/estimate/{{ rev.id }}/schedule" onsubmit="return confirm('Regenerate the schedule from the current estimate? Existing manual schedule edits will be replaced.');"><input type="hidden" name="action" value="regenerate"><button class="button secondary">Regenerate Schedule</button></form>{% endif %}
+      <a class="button secondary" href="/estimate/{{ rev.id }}/schedule.csv">Export Schedule CSV</a>
       <a class="button secondary" href="/estimate/{{ rev.id }}/jira.csv">Export Jira CSV</a>
     </div>
   </div>
 
   <div class="workbook-bar">Project Schedule</div>
-  <div class="schedule-note {% if rev.schedule_needs_refresh %}stale-warning{% endif %}">{% if rev.schedule_needs_refresh %}<strong>Schedule Requires Refresh.</strong> The estimate has changed since this schedule was generated. {% endif %}Budget hours are generated from the estimate. Resource, status, completion, change order hours, hours used, comments, and dates are editable while the revision is Draft.</div>
+  <div class="schedule-note {% if rev.schedule_needs_refresh %}stale-warning{% endif %}">{% if rev.schedule_needs_refresh %}<strong>Schedule Requires Refresh.</strong> The estimate has changed since this schedule was generated. {% endif %}Budget hours are generated from the estimate. Resource, status, completion, change order hours, hours used, comments, and dates are editable while the revision is Draft. Schedule CSV exports these persisted values exactly as currently stored; it does not regenerate a stale schedule.</div>
   <form method="post" action="/estimate/{{ rev.id }}/schedule">
     <div class="schedule-scroll">
       <table class="schedule-grid">
