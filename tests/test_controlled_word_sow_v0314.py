@@ -182,7 +182,7 @@ def test_pdf_watermark_adds_draft_text_to_every_review_page():
         assert "DRAFT" in (page.extract_text() or "")
 
 
-def test_release_wiring_and_sow_review_ui_are_v03141():
+def test_release_wiring_and_sow_review_ui_are_v03150():
     run = Path("app/run.py").read_text(encoding="utf-8")
     base = Path("app/templates/base.html").read_text(encoding="utf-8")
     mep = Path("app/templates/sow.html").read_text(encoding="utf-8")
@@ -190,7 +190,7 @@ def test_release_wiring_and_sow_review_ui_are_v03141():
     render = Path("render.yaml").read_text(encoding="utf-8")
     control = Path("app/sow_word_control.py").read_text(encoding="utf-8")
 
-    assert 'app.version = "0.3.14.1"' in run
+    assert 'app.version = "0.3.15.0"' in run
     assert "install_sow_review_pdf_watermark()" in run
     assert "register_controlled_sow_word(app, core)" in run
     assert "Draft Word SOW" not in base
