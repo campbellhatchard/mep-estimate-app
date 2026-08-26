@@ -44,6 +44,7 @@ def render_small_project_docx(db: Session, sow: SOW, rev: EstimateRevision) -> b
         doc,
         {
             "<CustomerName>": rev.customer or "",
+            "<CUSTOMERNAME>": rev.customer or "",
             "<99999999>": rev.estimate.estimate_number,
             "<Today>": sow.sow_date.strftime("%B %d, %Y"),
             "(Other DSI Entity)": rev.entity or "Data Systems International, Inc. dba Cloud Inventory®",
