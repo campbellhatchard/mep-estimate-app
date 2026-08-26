@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
+
+
+def utc_now() -> datetime:
+    """Return naive UTC to preserve the application's existing database timestamp contract."""
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class ScheduleTaskRelationship(Base):
@@ -35,4 +40,4 @@ class ScheduleTaskRelationship(Base):
     created_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
