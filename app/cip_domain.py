@@ -37,6 +37,7 @@ from .models import (
     EstimateRevision,
     ScheduleTask,
 )
+from .route_architecture import take_route as _take_route
 from .seed import slug
 from .services.audit import record
 from .services.cip_calculation import (
@@ -54,15 +55,6 @@ STANDARD_SCOPE = {
     "INTEGRATION": "CIP Integration",
 }
 CUSTOM_SLOTS = {"CUSTOM_DESKTOP": 16, "CUSTOM_MOBILE": 16, "REPORT": 16}
-
-
-def _take_route(app, path: str, method: str):
-    for route in list(app.router.routes):
-        methods = getattr(route, "methods", set()) or set()
-        if getattr(route, "path", None) == path and method.upper() in methods:
-            app.router.routes.remove(route)
-            return route.endpoint
-    return None
 
 
 def configuration_product(db: Session, version_id: int) -> str:
