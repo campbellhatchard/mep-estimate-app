@@ -18,5 +18,10 @@ def test_v0325_release_wiring_and_controlled_jira_capacity():
     )
     bootstrap = Path("app/application_bootstrap.py").read_text(encoding="utf-8")
     schedule = Path("app/templates/schedule.html").read_text(encoding="utf-8")
+    migration = Path("migrations/versions/f84a1d6c27b3_jira_schedule_relationships.py").read_text(
+        encoding="utf-8"
+    )
     assert "register_jira_relationship_routes(app, core)" in bootstrap
     assert "/estimate/{{ rev.id }}/jira-relationships" in schedule
+    assert 'revision = "f84a1d6c27b3"' in migration
+    assert 'down_revision = "b72e19c4d3a8"' in migration
