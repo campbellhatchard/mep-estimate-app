@@ -11,6 +11,7 @@ from .estimate_revision_controls import (
     install_estimate_business_rule_controls,
     register_revision_rationale_controls,
 )
+from .jira_relationships import register_jira_relationship_routes
 from .mep_sow_erp_runtime import install_mep_sow_erp_wording
 from .models import ROLE_ORDER
 from .precision_runtime import (
@@ -37,13 +38,14 @@ from .warning_hardening import install_warning_hardening
 
 # Model/table registration and controlled template migrations are import-time compatibility
 # boundaries. Keep them explicit here rather than scattering side-effect imports in run.py.
+from . import jira_models  # noqa: F401
 from . import small_project_models  # noqa: F401
 from . import sow_layout_v2  # noqa: F401
 from . import sow_layout_v3  # noqa: F401
 from . import sow_template_reconcile  # noqa: F401
 
 
-RELEASE_VERSION = "0.3.24.0"
+RELEASE_VERSION = "0.3.25.0"
 
 
 def _configure_roles() -> None:
@@ -82,6 +84,7 @@ def _register_estimate_capabilities(app, core) -> None:
     # Product dispatch exists from this point forward. Shared exports/previews/lifecycle layers
     # can therefore operate through one MEP/CIP boundary without reimplementing calculations.
     register_schedule_exports(app, core)
+    register_jira_relationship_routes(app, core)
     install_calculation_explanations(core)
     install_mep_sow_erp_wording(core)
     register_precision_routes(app, core)

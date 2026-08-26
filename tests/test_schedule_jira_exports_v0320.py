@@ -178,7 +178,7 @@ def test_jira_export_preserves_27_columns_and_includes_nonbillable_only_schedule
             )
             assert event is not None
             assert "27-column" in (event.reason or "")
-            assert "deferred" in (event.reason or "")
+            assert "0 explicit relationship record(s) evaluated" in (event.reason or "")
 
 
 def test_schedule_csv_requires_an_existing_persisted_schedule_and_does_not_generate_one():
