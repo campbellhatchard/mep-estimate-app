@@ -191,10 +191,12 @@ def test_release_wiring_and_sow_review_ui_match_current_baseline():
     control = Path("app/sow_word_control.py").read_text(encoding="utf-8")
     small_project_control = Path("app/small_project_word_runtime.py").read_text(encoding="utf-8")
 
-    assert 'app.version = "0.3.18.0"' in run
+    assert 'app.version = "0.3.19.0"' in run
     assert "install_sow_review_pdf_watermark()" in run
     assert "register_controlled_sow_word(app, core)" in run
     assert "install_small_project_word_dispatch()" in run
+    assert "register_sow_lineage_carry_forward(app, core)" in run
+    assert "install_mep_sow_erp_wording(core)" in run
     assert "Draft Word SOW" not in base
     for template in (mep, cip):
         assert "<h2>SOW Review</h2>" in template
