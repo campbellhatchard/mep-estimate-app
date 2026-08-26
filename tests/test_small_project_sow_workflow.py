@@ -127,6 +127,8 @@ def test_mep_small_project_authoring_uses_controlled_template_and_removes_exampl
         assert "Objective1" not in text
         assert "Put Away Application" not in text
         assert "(Other DSI Entity)" not in text
+        assert "<CustomerName>" not in text
+        assert "<CUSTOMERNAME>" not in text
 
         page = client.get(f"/sow/{sid}")
         assert page.status_code == 200
