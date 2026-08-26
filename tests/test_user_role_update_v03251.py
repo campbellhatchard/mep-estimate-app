@@ -55,6 +55,8 @@ def test_user_role_update_retains_existing_rows_when_adding_tools_admin():
             assert user is not None
             after_add = {row.role: row.id for row in user.roles}
             assert set(after_add) == {"ADMIN", "TOOLS_ADMIN", "ESTIMATOR", "REVIEWER"}
+            assert "TOOLS_ADMIN" in user.role_names
+            assert user.has_role("TOOLS_ADMIN")
             assert after_add["ADMIN"] == before["ADMIN"]
             assert after_add["ESTIMATOR"] == before["ESTIMATOR"]
             assert after_add["REVIEWER"] == before["REVIEWER"]
