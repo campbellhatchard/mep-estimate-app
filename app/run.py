@@ -30,6 +30,9 @@ from .small_project_template_admin import register_small_project_template_admin
 from .small_project_workflow import register_small_project_sow_workflow
 from .small_project_word_runtime import install_small_project_word_dispatch
 
+if "TOOLS_ADMIN" not in ROLE_ORDER:
+    ROLE_ORDER.insert(ROLE_ORDER.index("ESTIMATOR"), "TOOLS_ADMIN")
+ROLE_LABELS["TOOLS_ADMIN"] = "Tools Admin"
 if "SOW_APPROVER" not in ROLE_ORDER:
     ROLE_ORDER.insert(ROLE_ORDER.index("READ_ONLY"), "SOW_APPROVER")
 ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
