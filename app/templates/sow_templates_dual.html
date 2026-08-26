@@ -4,10 +4,10 @@
 {% macro version_table(title, versions) %}
 <section class="card">
   <h2>{{title}}</h2>
-  <div class="table-wrap"><table class="data-table"><thead><tr><th>Version</th><th>Status</th><th>File</th><th>Reason</th><th>Created</th><th>Activated</th><th>Actions</th></tr></thead><tbody>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>Version</th><th>Status</th><th>File</th><th>Change Reason</th><th>Created</th><th>Activated</th><th>Actions</th></tr></thead><tbody>
     {% for v in versions %}
     <tr>
-      <td>v{{v.version_no}}</td><td>{{v.status}}</td><td>{{v.filename}}</td><td>{{v.change_reason}}</td>
+      <td>v{{v.version_no}}</td><td>{{v.status}}</td><td>{{v.filename}}</td><td>{{v.change_reason or '—'}}</td>
       <td>{{v.created_at.strftime('%Y-%m-%d')}} by {{users.get(v.created_by,'System')}}</td>
       <td>{% if v.activated_at %}{{v.activated_at.strftime('%Y-%m-%d')}} by {{users.get(v.activated_by,'System')}}{% else %}—{% endif %}</td>
       <td><a class="button small secondary" href="/admin/sow-templates/{{v.id}}/download">Download</a>{% if v.status=='DRAFT' %}<form class="inline-form" method="post" action="/admin/sow-templates/{{v.id}}/activate"><button class="button small primary">Activate</button></form>{% endif %}</td>
@@ -16,44 +16,32 @@
   </tbody></table></div>
 </section>
 {% endmacro %}
+{% macro upload_card(template_key, title, button_text) %}
+<form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload" style="min-width:0;border:1px solid #d3dde1;border-radius:6px;padding:18px;background:#fff;">
+  <input type="hidden" name="template_key" value="{{template_key}}">
+  <h3 style="margin-top:0;">{{title}}</h3>
+  <label>Word Template<input type="file" name="file" accept=".docx" required></label>
+  <label style="display:block;margin-top:12px;">Change Reason
+    <textarea name="change_reason" rows="2" required style="display:block;width:100%;min-height:42px;max-height:96px;box-sizing:border-box;resize:vertical;" placeholder="Describe what changed and why"></textarea>
+  </label>
+  <button class="button primary" style="margin-top:12px;">{{button_text}}</button>
+</form>
+{% endmacro %}
 {% block content %}
 <div class="estimate-shell wide-shell">
   <div class="page-title-row"><div><h1>SOW Templates</h1><div class="subtle">Controlled Word templates. Active and Retired versions are immutable; upload wording changes as a new Draft version. Each SOW remains pinned to the exact template version used at creation.</div></div></div>
 
   <section class="card">
     <h2>Upload New Template Version</h2>
-    <div class="sow-grid">
-      <form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload">
-        <input type="hidden" name="template_key" value="MEP_NET_NEW">
-        <h3>MEP New Client</h3>
-        <label>Word Template<input type="file" name="file" accept=".docx" required></label>
-        <label>Change Reason<textarea name="change_reason" rows="3" required></textarea></label>
-        <button class="button primary">Upload MEP Draft Version</button>
-      </form>
-      <form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload">
-        <input type="hidden" name="template_key" value="CIP_NET_NEW">
-        <h3>CIP New Client</h3>
-        <label>Word Template<input type="file" name="file" accept=".docx" required></label>
-        <label>Change Reason<textarea name="change_reason" rows="3" required></textarea></label>
-        <button class="button primary">Upload CIP Draft Version</button>
-      </form>
-      <form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload">
-        <input type="hidden" name="template_key" value="MEP_SMALL_PROJECT">
-        <h3>MEP Small Project</h3>
-        <label>Word Template<input type="file" name="file" accept=".docx" required></label>
-        <label>Change Reason<textarea name="change_reason" rows="3" required></textarea></label>
-        <button class="button primary">Upload MEP Small Project Draft Version</button>
-      </form>
-      <form method="post" action="/admin/sow-templates/upload" enctype="multipart/form-data" class="sow-template-upload">
-        <input type="hidden" name="template_key" value="CIP_SMALL_PROJECT">
-        <h3>CIP Small Project</h3>
-        <label>Word Template<input type="file" name="file" accept=".docx" required></label>
-        <label>Change Reason<textarea name="change_reason" rows="3" required></textarea></label>
-        <button class="button primary">Upload CIP Small Project Draft Version</button>
-      </form>
+    <div class="sow-template-upload-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start;">
+      {{ upload_card('MEP_NET_NEW', 'MEP New Client', 'Upload MEP Draft Version') }}
+      {{ upload_card('CIP_NET_NEW', 'CIP New Client', 'Upload CIP Draft Version') }}
+      {{ upload_card('MEP_SMALL_PROJECT', 'MEP Small Project', 'Upload MEP Small Project Draft Version') }}
+      {{ upload_card('CIP_SMALL_PROJECT', 'CIP Small Project', 'Upload CIP Small Project Draft Version') }}
     </div>
-    <p class="subtle">New Client templates use the controlled bracketed <code>[[MARKER]]</code> convention. Small Project templates currently preserve the controlled source-document placeholders <code>&lt;CustomerName&gt;</code>, <code>&lt;99999999&gt;</code> and <code>&lt;Today&gt;</code>. Preserve the applicable markers when uploading a new Draft version.</p>
-    <p class="subtle">Small Project authoring and machine substitution are intentionally out of scope for this foundation release.</p>
+    <style>@media(max-width:850px){.sow-template-upload-grid{grid-template-columns:1fr!important;}}</style>
+    <p class="subtle">A Change Reason is required independently for every uploaded template version and is retained in the version history and audit trail.</p>
+    <p class="subtle">New Client templates use the controlled bracketed <code>[[MARKER]]</code> convention. Small Project templates preserve the controlled source-document placeholders <code>&lt;CustomerName&gt;</code>, <code>&lt;99999999&gt;</code> and <code>&lt;Today&gt;</code>. Preserve the applicable markers when uploading a new Draft version.</p>
   </section>
 
   {{ version_table('MEP New Client SOW Versions', mep_versions) }}
