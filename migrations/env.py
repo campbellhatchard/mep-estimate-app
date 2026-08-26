@@ -27,6 +27,8 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.models import Base
+from app import jira_models  # noqa: F401  # register relationship table in Base metadata
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -62,9 +64,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    In this scenario we need an Engine and associate a connection with the context.
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
