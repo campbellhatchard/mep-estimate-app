@@ -41,7 +41,7 @@ ROLE_LABELS["SOW_APPROVER"] = "SOW Approver"
 
 app = core.app
 app.title = "Cloud Inventory Services Estimator"
-app.version = "0.3.17.0"
+app.version = "0.3.18.0"
 
 configure_templates(core.templates)
 # Replace calculation references before any product routes capture them. Locked revisions
