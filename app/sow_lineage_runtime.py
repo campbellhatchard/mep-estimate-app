@@ -185,6 +185,11 @@ def _copy_small_project_manual_fields(
             continue
         row.scope_description = prior.scope_description
         row.detail_notes = prior.detail_notes
+        if template_key == SOW_TEMPLATE_MEP_SMALL_PROJECT and row.deliverable_key == "MEP_INSTALL":
+            # MEP install mode is SOW-authored (not estimate-derived). Preserve the
+            # associated deliverable state so a carried Cloud/On-Prem mode cannot
+            # render as an unchecked/invalid MEP Installation deliverable.
+            row.include = dest_cfg.install_mode != "None"
 
     source_methods = {row.methodology_key: row for row in source_cfg.methodologies}
     for row in dest_cfg.methodologies:
