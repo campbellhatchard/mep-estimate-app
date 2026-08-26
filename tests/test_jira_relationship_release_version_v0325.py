@@ -6,7 +6,7 @@ from app.run import app
 
 
 def test_v0325_release_wiring_and_controlled_jira_capacity():
-    assert RELEASE_VERSION == "0.3.25.0"
+    assert RELEASE_VERSION == "0.3.25.1"
     assert app.version == RELEASE_VERSION
     assert RELATIONSHIP_CAPACITY == {
         "BLOCKS": 6,
