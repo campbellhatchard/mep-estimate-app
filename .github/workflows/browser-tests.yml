@@ -1,0 +1,91 @@
+name: Browser Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mep_estimator_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mep_estimator_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/mep_estimator_e2e
+      SESSION_SECRET: e2e-session-secret
+      ADMIN_PASSWORD: E2E-Bootstrap-Admin-2026!
+      SOW_TRACK_CHANGES_PASSWORD: E2E-TrackedChanges-2026!
+      ENVIRONMENT: test
+      APP_TIMEZONE: America/Chicago
+      E2E_BASE_URL: http://127.0.0.1:8000
+      E2E_RUN: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            requirements-e2e.txt
+      - name: Install test dependencies
+        run: pip install -r requirements-e2e.txt
+      - name: Run deterministic browser prerequisites
+        env:
+          E2E_RUN: "0"
+        run: PYTHONPATH=. pytest -q -ra --strict-config tests/test_precision_v101.py tests/test_config_governance_v0324.py tests/test_user_role_update_v03251.py
+      - name: Apply PostgreSQL migrations
+        run: PYTHONPATH=. alembic upgrade head
+      - name: Install Playwright Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Start FastAPI application
+        run: |
+          mkdir -p test-results/e2e
+          PYTHONPATH=. uvicorn app.run:app --host 127.0.0.1 --port 8000 > test-results/e2e/app.log 2>&1 &
+          echo $! > test-results/e2e/app.pid
+      - name: Wait for health
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat test-results/e2e/app.log
+          exit 1
+      - name: Seed synthetic browser users
+        run: PYTHONPATH=. python tests/e2e/support/users.py
+      - name: Select browser suite
+        id: suite
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then echo "marker=smoke" >> "$GITHUB_OUTPUT"; else echo "marker=release" >> "$GITHUB_OUTPUT"; fi
+      - name: Run Chromium browser tests
+        run: PYTHONPATH=. pytest tests/e2e -m "${{ steps.suite.outputs.marker }}" --browser chromium --tracing retain-on-failure --screenshot only-on-failure --output=test-results/e2e/playwright -ra
+      - name: Collect application log
+        if: always()
+        run: tail -n 500 test-results/e2e/app.log > test-results/e2e/app-tail.log || true
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-test-failure-${{ github.run_id }}
+          path: test-results/e2e
+          if-no-files-found: warn
+          retention-days: 14
