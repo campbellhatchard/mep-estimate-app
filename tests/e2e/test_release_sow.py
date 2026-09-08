@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import zipfile
 
@@ -161,10 +162,11 @@ def test_representative_pdf_docx_draft_and_approved_controls(page, app_url, user
     with zipfile.ZipFile(io.BytesIO(draft_docx.body())) as zf:
         settings = zf.read("word/settings.xml").decode("utf-8")
         combined = "\n".join(zf.read(name).decode("utf-8", errors="ignore") for name in zf.namelist() if name.startswith("word/") and name.endswith(".xml"))
+    protection_secret = os.environ["SOW_TRACK_CHANGES_PASSWORD"]
     assert "trackRevisions" in settings
     assert "documentProtection" in settings
     assert "DRAFT" in combined
-    assert "E2E-TrackedChanges-2026!" not in combined
+    assert protection_secret not in combined
 
     _send_to_approver(page, approver.username)
     _approve_sow_as(page, app_url, sid, approver)
@@ -177,6 +179,7 @@ def test_representative_pdf_docx_draft_and_approved_controls(page, app_url, user
         combined = "\n".join(zf.read(name).decode("utf-8", errors="ignore") for name in zf.namelist() if name.startswith("word/") and name.endswith(".xml"))
     assert "trackRevisions" in settings and "documentProtection" in settings
     assert "DRAFT" not in combined
+    assert protection_secret not in combined
     with SessionLocal() as db:
         sow = db.get(SOW, sid)
         assert sow.content_hash and sow.approved_text_snapshot
