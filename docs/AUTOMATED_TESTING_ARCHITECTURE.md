@@ -46,6 +46,8 @@ Fixed synthetic ADMIN, TOOLS_ADMIN, ESTIMATOR, REVIEWER, APPROVER, SOW_APPROVER,
 
 Synthetic estimates, revisions, configurations, schedules, Jira relationships and SOWs are created as required. No production customer record is a test dependency.
 
+The SOW Track Changes protection secret used by browser CI is generated uniquely for the runner, masked before subsequent steps and never committed as a static value. Output tests verify that the runtime secret is not embedded in generated DOCX XML.
+
 ## Browser suites
 
 ### Smoke
@@ -73,7 +75,7 @@ Push to `main` and explicit Browser Tests runs use `pytest tests/e2e -m release`
 - audit evidence;
 - historical estimate/SOW configuration, template and composition reproducibility.
 
-Smoke scenarios are also marked `release` so the broader gate is cumulative.
+Smoke scenarios are also marked `release` so the broader gate is cumulative. A red P0 smoke gate is intentionally resolved before relying on the broader release run; release-only tests remain implemented but are not treated as passing until separately executed.
 
 ## Failure evidence and flakiness policy
 
@@ -123,11 +125,17 @@ The existing `Application Tests` workflow remains authoritative and separate. Br
 
 A deployment is not considered functionally clean merely because deterministic tests are green. Release-critical browser failures and specification conflicts must be reviewed as part of deployment validation.
 
-## Current Phase 1 defect evidence
+## Current Phase 1 execution evidence
 
-The first browser execution successfully proved the CI architecture end-to-end: PostgreSQL provisioned, Alembic completed, Chromium installed, the real FastAPI application started, synthetic users authenticated, deterministic prerequisites passed and failure artifacts were retained.
+The latest clean smoke execution proved the complete CI path: ephemeral PostgreSQL 18 provisioned, Alembic completed, Chromium installed by GitHub Actions, the real FastAPI application started and passed `/health`, nine synthetic users were seeded, deterministic browser prerequisites passed, the randomized SOW protection secret remained masked, and traces/screenshots/application logs were retained on failure. The browser test command itself completed in approximately 10 seconds; the full browser job, including provisioning and browser installation, completed in roughly 77 seconds.
 
-It also exposed a substantive CIP rule conflict. The approved v0.3.25.1 requirement states that Plan Hours Not Billable increase internal/Task Hours but do not increase customer fees. Current Plan PM implementation includes Plan non-billable workload in fee-bearing Investment Hours. The strict browser assertion remains release-blocking; business behavior is not changed merely to make the automation green.
+Six smoke journeys were selected. Four passed: active/inactive authentication, representative RBAC boundaries, MEP identity/configuration/engine pinning, and lifecycle locking including a server-side mutation rejection. Two failed on reproducible P0 business behavior conflicts rather than browser-environment or selector failures.
+
+**CI-E2E-DEFECT-001 — CIP non-billable Plan hours affect customer Investment.** The approved v0.3.25.1 rule requires Plan Hours Not Billable to increase internal/Task Hours without increasing customer Investment Hours or fees. In the controlled scenario, adding 4 non-billable Project Kickoff hours increased Investment Hours from `262.25` to `263.25`. Current Plan PM logic includes Plan non-billable workload in fee-bearing Investment Hours. The assertion remains release-blocking.
+
+**CI-E2E-DEFECT-002 — MEP Save Detail does not persist the recalculated authoritative summary.** The browser successfully persists a required-note `0.5` MEP detail adjustment and renders the affected line at `18.5` hours. A fresh v1.0.1 authoritative domain calculation returns `163.5` hours / `$40,875`, but `EstimateRevision.calculated_hours` remains `163.0` after Save Detail. The saved detail and authoritative calculation are therefore ahead of the persisted revision summary. The assertion remains release-blocking.
+
+Business behavior has not been changed merely to make either test green. The defects should be resolved under normal change control, then the same strict smoke suite should be rerun before executing the broader release gate.
 
 ## Intentional Phase 1 exclusions
 
