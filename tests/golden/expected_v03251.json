@@ -1,6 +1,6 @@
 {
   "baseline": "Cloud Inventory Services Estimator v0.3.25.1",
-  "source": "Approved reconstruction rules and controlled expected-results baseline; values are static and are not generated from the application during test execution.",
+  "source": "Approved v0.3.25.1 reconstruction rules and existing controlled deterministic baselines. Values are static test-oracle data and are not learned from application output during test execution.",
   "mep": [
     {"id":"MEP-01-default","hours":57.0,"fees":14250.0},
     {"id":"MEP-02-on-prem","hours":85.0,"fees":21250.0},
@@ -20,7 +20,7 @@
     {"id":"CIP-02-install-base","investment_hours":68.0,"non_billable_hours":0.0,"total_internal_hours":68.0,"fees":17000.0,"solution_testing_hours":0.0},
     {"id":"CIP-03-small-install-base","investment_hours":41.0,"non_billable_hours":0.0,"total_internal_hours":41.0,"fees":10250.0,"solution_testing_hours":0.0},
     {"id":"CIP-04-epp-cloud","investment_hours":234.0,"non_billable_hours":0.0,"total_internal_hours":234.0,"fees":58500.0,"solution_testing_hours":0.0},
-    {"id":"CIP-05-epp-on-prem","investment_hours":250.0,"non_billable_hours":0.0,"total_internal_hours":250.0,"fees":62500.0,"solution_testing_hours":0.0},
+    {"id":"CIP-05-epp-on-prem","investment_hours":245.0,"non_billable_hours":0.0,"total_internal_hours":245.0,"fees":61250.0,"solution_testing_hours":0.0},
     {"id":"CIP-06-desktop-baseline","investment_hours":248.25,"non_billable_hours":0.0,"total_internal_hours":248.25,"fees":62062.5,"solution_testing_hours":0.01875},
     {"id":"CIP-07-desktop-mod","investment_hours":262.0,"non_billable_hours":0.0,"total_internal_hours":262.0,"fees":65500.0,"solution_testing_hours":1.2},
     {"id":"CIP-08-mobile-custom","investment_hours":322.0,"non_billable_hours":0.0,"total_internal_hours":322.0,"fees":80500.0,"solution_testing_hours":4.8075},
