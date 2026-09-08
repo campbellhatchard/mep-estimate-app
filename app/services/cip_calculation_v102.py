@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..cip_models import CIPNonBillableAllocation, CIPRevisionInput
 from ..models import EstimateRevision
-from .cip_detail_engine import CIPConfig
+from .cip_detail_engine import CIPConfig, xrnd
 from .cip_calculation_v101 import calculation as calculation_v101
 
 
@@ -90,15 +90,15 @@ def calculation(db: Session, rev: EstimateRevision):
     billable_hours = q2(sum(value["billable"] for value in phase_totals.values()))
     billing_rate = float(rev.billing_rate or 0)
 
-    # Estimate range and duration are effort-derived and therefore remain based on gross
-    # Task Hours. The fixed approved investment allocation is then subtracted from each
-    # range point to derive the customer-billable range.
-    low_task_hours = q2(task_hours * (1 - inp.low_factor))
-    high_task_hours = q2(task_hours * (1 + inp.high_factor))
+    # Estimate range and duration remain effort-derived. Preserve the source-model whole-hour
+    # range rounding, then apply the fixed approved funding allocation to each billable range.
+    low_task_hours = xrnd(task_hours * (1 - inp.low_factor), 0)
+    high_task_hours = xrnd(task_hours * (1 + inp.high_factor), 0)
     low_billable_hours = q2(max(0.0, low_task_hours - investment_hours))
     high_billable_hours = q2(max(0.0, high_task_hours - investment_hours))
-    duration = q2(
-        (task_hours / cfg.param("DURATION_HOURS_PER_MONTH")) * cfg.param("DURATION_FACTOR")
+    duration = xrnd(
+        (task_hours / cfg.param("DURATION_HOURS_PER_MONTH")) * cfg.param("DURATION_FACTOR"),
+        2,
     ) if task_hours else 0.0
 
     summary.update({
@@ -135,3 +135,65 @@ def recalculate_and_store(db: Session, rev: EstimateRevision):
     rev.engine_version = CIP_ENGINE_VERSION
     db.flush()
     return lines, summary, details, detail_summary
+
+
+def install_cip_investment_funding(core) -> None:
+    """Install CIP-1.0.2 before route/explanation closures capture calculation bindings."""
+    from . import cip_calculation as cip_public_module
+    from . import cip_schedule as cip_schedule_module
+    from .. import (
+        calculation_explain,
+        cip_domain,
+        cip_revision,
+        cip_routes_detail,
+        cip_routes_estimate,
+        cip_routes_exports,
+        precision_runtime,
+    )
+
+    cip_public_module.calculation = calculation
+    cip_public_module.recalculate_and_store = recalculate_and_store
+    cip_public_module.CIP_ENGINE_VERSION = CIP_ENGINE_VERSION
+    cip_schedule_module.calculation = calculation
+    cip_domain.cip_calculation = calculation
+    cip_domain.cip_recalculate_and_store = recalculate_and_store
+    cip_revision.cip_recalculate_and_store = recalculate_and_store
+    cip_revision.CIP_ENGINE_VERSION = CIP_ENGINE_VERSION
+    cip_routes_estimate.cip_recalculate_and_store = recalculate_and_store
+    cip_routes_detail.cip_calculation = calculation
+    cip_routes_detail.cip_recalculate_and_store = recalculate_and_store
+    cip_routes_exports.cip_calculation = calculation
+
+    # precision_runtime owns preview/PDF/startup closures and captured the prior versioned
+    # functions at import time. Patch those module globals before the routes are registered.
+    precision_runtime.cip_calculation = calculation
+    precision_runtime.cip_recalculate = recalculate_and_store
+    precision_runtime.CIP_ENGINE_VERSION = CIP_ENGINE_VERSION
+
+    # Keep Explain evidence commercially accurate without changing its formula/config detail.
+    original_enrich = calculation_explain.enrich_cip_lines
+    if not getattr(original_enrich, "_cip_funding_semantics", False):
+        def funding_enrich(db, rev, lines):
+            enriched = original_enrich(db, rev, lines)
+            if rev.engine_version == CIP_ENGINE_VERSION:
+                for line in enriched:
+                    old = (
+                        f"Plan Hours Not Billable ({line.non_billable_hours}) affect internal "
+                        "Task Hours but not customer Investment Hours."
+                    )
+                    new = (
+                        f"Investment Hours ({line.investment_hours}) are an internal funding "
+                        f"allocation within gross Task Hours; Customer Billable Hours are "
+                        f"{line.billable_hours}. Investment does not change gross effort or "
+                        "effort-derived PM, contingency, preparation, testing or schedule effort."
+                    )
+                    line.trace = (line.trace or "").replace(old, new)
+                    line.trace = line.trace.replace(
+                        "adjusted build-scope investment", "adjusted gross build Task Hours"
+                    ).replace(
+                        "phase child investment", "phase child gross Task Hours"
+                    )
+            return enriched
+
+        funding_enrich._cip_funding_semantics = True
+        calculation_explain.enrich_cip_lines = funding_enrich
