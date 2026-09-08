@@ -51,6 +51,8 @@ def test_browser_workflow_uses_ephemeral_postgres_chromium_and_local_fastapi_onl
     assert "--tracing retain-on-failure" in lower
     assert "--screenshot only-on-failure" in lower
     assert "upload-artifact" in lower
+    assert "::add-mask::" in workflow
+    assert "E2E-TrackedChanges-2026!" not in workflow
     assert "firefox" not in lower
     assert "webkit" not in lower
     assert "npm " not in lower
