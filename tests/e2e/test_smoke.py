@@ -28,7 +28,9 @@ def test_authentication_active_and_inactive(page, app_url, user_specs):
     page.get_by_label("Password").fill(inactive.password)
     page.get_by_role("button", name="Sign in").click()
     expect(page).to_have_url(re.compile(r".*/login$"))
-    expect(page.get_by_text("Invalid username/password or inactive user")).to_be_visible()
+    failure = page.get_by_role("alertdialog", name="Missing Required Information")
+    expect(failure).to_be_visible()
+    expect(failure).to_contain_text("Invalid username or password")
 
 
 @pytest.mark.smoke
@@ -95,11 +97,16 @@ def test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload(page, app_ur
     fusion = page.locator(".app-pair").filter(has_text=re.compile(r"^Cycle Count")).first.locator("select")
     select_and_save(page, rid, fusion, "Mod Required")
 
-    page.get_by_role("link", name="Estimate Detail").click()
-    row = page.locator("tr").filter(has_text="Cycle Count").first
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Estimate Detail").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/detail$"))
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
+    expect(row).to_be_visible()
     row.locator('input[name^="mod_"]').fill("0.5")
     row.locator('input[name^="notes_"]').fill("Controlled half-hour browser regression")
-    page.get_by_role("button", name="Save Detail").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Detail").click()
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
     expect(row.locator(".line-total")).to_have_text("18.5")
 
     with SessionLocal() as db:
@@ -107,8 +114,8 @@ def test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload(page, app_ur
         assert rev.calculated_hours == pytest.approx(163.5)
         assert rev.calculated_fees == pytest.approx(40875.0)
 
-    page.reload()
-    row = page.locator("tr").filter(has_text="Cycle Count").first
+    page.reload(wait_until="domcontentloaded")
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
     expect(row.locator('input[name^="mod_"]')).to_have_value("0.5")
     expect(row.locator(".line-total")).to_have_text("18.5")
 
@@ -127,24 +134,31 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
 
     desktop = page.locator(".app-pair").filter(has_text="INB Shipments").first.locator("select")
     select_and_save(page, rid, desktop, "Mod Required")
-    page.get_by_role("link", name="Estimate Detail").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Estimate Detail").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/detail$"))
 
     row = page.locator("tr").filter(has_text="INB Shipments").first
     row.locator('input[name^="added_"]').fill("0.25")
     row.locator('input[name^="adjustment_notes_"]').fill("Quarter-hour development adjustment")
     row.locator('input[name^="test_adjust_"]').fill("0.25")
     row.locator('input[name^="test_notes_"]').fill("Quarter-hour testing adjustment")
-    page.get_by_role("button", name="Save Detail Adjustments").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Detail Adjustments").click()
 
-    page.get_by_role("link", name="Calculations").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Calculations").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/calculations$"))
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
         _, before, _, _ = cip_calculation(db, rev)
 
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
+    expect(kickoff).to_be_visible()
     kickoff.locator('input[name^="nonbillable_"]').fill("4")
     kickoff.locator('input[name^="nonbillable_notes_"]').fill("Internal planning allocation")
-    page.get_by_role("button", name="Save Calculation Adjustments").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Calculation Adjustments").click()
 
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
@@ -154,16 +168,11 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
         ).one()
         assert allocation.hours == 4
         assert after["non_billable_hours"] == pytest.approx(before["non_billable_hours"] + 4)
-        assert after["total_internal_hours"] == pytest.approx(
-            after["investment_hours"] + after["non_billable_hours"]
-        )
-        # Governing v0.3.25.1 rules include non-billable Plan workload in Plan PM,
-        # so only the PM overhead may move customer investment; the 4h allocation
-        # itself is not added to the fee base.
-        assert after["investment_hours"] < before["investment_hours"] + 4
-        assert after["fees"] == pytest.approx(after["investment_hours"] * rev.billing_rate)
+        assert after["investment_hours"] == pytest.approx(before["investment_hours"])
+        assert after["fees"] == pytest.approx(before["fees"])
+        assert after["total_internal_hours"] == pytest.approx(before["total_internal_hours"] + 4)
 
-    page.reload()
+    page.reload(wait_until="domcontentloaded")
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
     expect(kickoff.locator('input[name^="nonbillable_"]')).to_have_value("4.0")
 
