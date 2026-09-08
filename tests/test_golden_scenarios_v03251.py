@@ -52,7 +52,7 @@ def _cip_setup(db, rev, scenario):
     if scenario=='CIP-02-install-base': rev.customer_type='Install_Base'
     elif scenario=='CIP-03-small-install-base': rev.customer_type='Install_Base'; rev.project_type='Small Project'; inp.project_type='Small Project'
     elif scenario=='CIP-04-epp-cloud': rev.project_type='EPP Cloud'; inp.project_type='EPP Cloud'; inp.epp_install='Cloud'; inp.label_sites=1
-    elif scenario=='CIP-05-epp-on-prem': rev.project_type='EPP On Prem'; inp.project_type='EPP On Prem'; inp.epp_install='On Prem'; inp.label_sites=1; inp.gateway=True
+    elif scenario=='CIP-05-epp-on-prem': rev.project_type='EPP On Prem'; inp.project_type='EPP On Prem'; inp.epp_install='On Prem'; inp.label_sites=1
     elif scenario=='CIP-06-desktop-baseline': _scope(db,rev.id,'DESKTOP')[0].config_type='Baseline'
     elif scenario=='CIP-07-desktop-mod': _scope(db,rev.id,'DESKTOP')[0].config_type='Mod Required'
     elif scenario=='CIP-08-mobile-custom': _scope(db,rev.id,'MOBILE')[0].config_type='Baseline'; c=_scope(db,rev.id,'CUSTOM_DESKTOP')[0]; c.description='Controlled Custom Desktop'; c.config_type='Moderate'
