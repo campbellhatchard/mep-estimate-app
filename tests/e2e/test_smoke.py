@@ -9,7 +9,7 @@ from app.cip_models import CIPNonBillableAllocation, CIPRevisionInput, EstimateP
 from app.database import SessionLocal
 from app.models import EstimateRevision
 from app.services.calculation_v101 import calculation as mep_calculation
-from app.services.cip_calculation_v101 import calculation as cip_calculation
+from app.services.cip_calculation_v102 import calculation as cip_calculation
 from tests.e2e.support.flows import create_estimate, fill_and_blur, login, logout, select_and_save, url
 
 
@@ -125,7 +125,7 @@ def test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload(page, app_ur
 
 
 @pytest.mark.smoke
-def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_url, user_specs):
+def test_cip_scope_quarter_hour_adjustments_and_investment_funding_semantics(page, app_url, user_specs):
     estimator = user_specs["estimator"]
     login(page, app_url, estimator.username, estimator.password)
     rid = create_estimate(page, app_url, "CIP")
@@ -133,7 +133,7 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
         inp = db.get(CIPRevisionInput, rid)
-        assert rev.engine_version == "CIP-1.0.1"
+        assert rev.engine_version == "CIP-1.0.2"
         assert inp.release_key == "RELEASE_26_2"
 
     desktop = page.locator(".app-pair").filter(has_text="INB Shipments").first.locator("select")
@@ -153,32 +153,41 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
     with page.expect_navigation(wait_until="domcontentloaded"):
         page.get_by_role("link", name="Calculations").click()
     expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/calculations$"))
+    expect(page.get_by_text("Customer Billable Hours", exact=True)).to_be_visible()
+
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
-        _, before, _, _ = cip_calculation(db, rev)
+        before_lines, before, _, _ = cip_calculation(db, rev)
+        before_pm = next(line for line in before_lines if line.key == "PLAN_PM")
+        before_contingency = next(line for line in before_lines if line.key == "PLAN_CONTINGENCY")
 
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
     expect(kickoff).to_be_visible()
-    kickoff.locator('input[type="number"][name^="nonbillable_"]').fill("4")
-    kickoff.locator('input[name^="nonbillable_notes_"]').fill("Internal planning allocation")
+    kickoff.locator('input[type="number"][name^="investment_"]').fill("4")
+    kickoff.locator('input[name^="investment_notes_"]').fill("Approved Cloud Inventory investment")
     with page.expect_navigation(wait_until="domcontentloaded"):
         page.get_by_role("button", name="Save Calculation Adjustments").click()
 
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
-        _, after, _, _ = cip_calculation(db, rev)
+        after_lines, after, _, _ = cip_calculation(db, rev)
+        after_pm = next(line for line in after_lines if line.key == "PLAN_PM")
+        after_contingency = next(line for line in after_lines if line.key == "PLAN_CONTINGENCY")
         allocation = db.query(CIPNonBillableAllocation).filter_by(
             revision_id=rid, line_key="PLAN_KICKOFF"
         ).one()
-        assert allocation.hours == 4
-        assert after["non_billable_hours"] == pytest.approx(before["non_billable_hours"] + 4)
-        assert after["investment_hours"] == pytest.approx(before["investment_hours"])
-        assert after["fees"] == pytest.approx(before["fees"])
-        assert after["total_internal_hours"] == pytest.approx(before["total_internal_hours"] + 4)
+        assert allocation.hours == pytest.approx(4.0)
+        assert after["task_hours"] == pytest.approx(before["task_hours"])
+        assert after["total_internal_hours"] == pytest.approx(before["total_internal_hours"])
+        assert after["investment_hours"] == pytest.approx(before["investment_hours"] + 4)
+        assert after["billable_hours"] == pytest.approx(before["billable_hours"] - 4)
+        assert after["fees"] == pytest.approx(before["fees"] - 4 * float(rev.billing_rate))
+        assert after_pm.task_hours == pytest.approx(before_pm.task_hours)
+        assert after_contingency.task_hours == pytest.approx(before_contingency.task_hours)
 
     page.reload(wait_until="domcontentloaded")
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
-    expect(kickoff.locator('input[type="number"][name^="nonbillable_"]')).to_have_value("4.0")
+    expect(kickoff.locator('input[type="number"][name^="investment_"]')).to_have_value("4.0")
 
 
 @pytest.mark.smoke
