@@ -32,7 +32,6 @@ jobs:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/mep_estimator_e2e
       SESSION_SECRET: e2e-session-secret
       ADMIN_PASSWORD: E2E-Bootstrap-Admin-2026!
-      SOW_TRACK_CHANGES_PASSWORD: E2E-TrackedChanges-2026!
       ENVIRONMENT: test
       APP_TIMEZONE: America/Chicago
       E2E_BASE_URL: http://127.0.0.1:8000
@@ -47,6 +46,12 @@ jobs:
             requirements.txt
             requirements-dev.txt
             requirements-e2e.txt
+      - name: Generate masked synthetic SOW protection secret
+        shell: bash
+        run: |
+          secret="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          echo "::add-mask::$secret"
+          echo "SOW_TRACK_CHANGES_PASSWORD=$secret" >> "$GITHUB_ENV"
       - name: Install test dependencies
         run: pip install -r requirements-e2e.txt
       - name: Run deterministic browser prerequisites
