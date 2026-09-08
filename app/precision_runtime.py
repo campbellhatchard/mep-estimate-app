@@ -116,8 +116,9 @@ def register_precision_routes(app, core):
                 "summary": {"hours": summary["hours"], "fees": summary["fees"]},
             }
 
-        # CIP preview uses a request-local transaction. Unsaved values are applied to the
-        # SQLAlchemy session, calculated, serialized, then rolled back so preview never persists.
+        # CIP preview uses a request-local transaction. Unsaved effort adjustments and funding
+        # allocations are applied to the SQLAlchemy session, calculated, serialized, then rolled
+        # back so preview never persists either class of commercial change.
         existing = {
             row.line_key: row
             for row in db.query(CalculationAdjustment)
@@ -141,39 +142,57 @@ def register_precision_routes(app, core):
         }
         for idx in range(count):
             key = str(form.get(f"line_key_{idx}", "")).strip()
-            phase = str(form.get(f"phase_{idx}", "")).strip()
-            if not key or phase != "Plan":
+            if not key:
                 continue
+            row = allocations.get(key)
+            default_hours = float(row.hours or 0) if row else 0.0
+            field = f"investment_{idx}"
+            # Backward-compatible request fallback for an in-flight older browser tab. Current
+            # CIP-1.0.2 pages always send investment_* on every line.
+            if field in form:
+                raw_hours = form.get(field, default_hours)
+            else:
+                phase = str(form.get(f"phase_{idx}", "")).strip()
+                raw_hours = form.get(f"nonbillable_{idx}", default_hours) if phase == "Plan" else default_hours
             try:
-                hours = float(form.get(f"nonbillable_{idx}", 0) or 0)
+                hours = float(raw_hours or 0)
             except Exception:
                 hours = 0.0
-            row = allocations.get(key)
+            if hours < 0:
+                db.rollback()
+                return JSONResponse({"detail": "Investment Hours cannot be negative."}, status_code=400)
             if not row:
                 row = CIPNonBillableAllocation(revision_id=rev.id, line_key=key, hours=0, notes="")
                 db.add(row)
                 allocations[key] = row
-            row.hours = max(0.0, hours)
+            row.hours = hours
 
-        db.flush()
-        lines, summary, _, _ = cip_calculation(db, rev)
-        payload = {
-            "product": PRODUCT_CIP,
-            "rows": [{
-                "key": row.key,
-                "standard": row.standard_hours,
-                "investment": row.investment_hours,
-                "non_billable": row.non_billable_hours,
-                "task": row.task_hours,
-            } for row in lines],
-            "phase_totals": summary["phase_totals"],
-            "summary": {
-                "investment_hours": summary["investment_hours"],
-                "non_billable_hours": summary["non_billable_hours"],
-                "total_internal_hours": summary["total_internal_hours"],
-                "fees": summary["fees"],
-            },
-        }
+        try:
+            db.flush()
+            lines, summary, _, _ = cip_calculation(db, rev)
+            payload = {
+                "product": PRODUCT_CIP,
+                "rows": [{
+                    "key": row.key,
+                    "standard": row.standard_hours,
+                    "investment": row.investment_hours,
+                    "non_billable": row.non_billable_hours,
+                    "task": row.task_hours,
+                    "billable": getattr(row, "billable_hours", row.investment_hours),
+                } for row in lines],
+                "phase_totals": summary["phase_totals"],
+                "summary": {
+                    "task_hours": summary.get("task_hours", summary["total_internal_hours"]),
+                    "investment_hours": summary["investment_hours"],
+                    "billable_hours": summary.get("billable_hours", summary["investment_hours"]),
+                    "non_billable_hours": summary["non_billable_hours"],
+                    "total_internal_hours": summary["total_internal_hours"],
+                    "fees": summary["fees"],
+                },
+            }
+        except ValueError as exc:
+            db.rollback()
+            return JSONResponse({"detail": str(exc)}, status_code=400)
         db.rollback()
         return payload
 
@@ -220,10 +239,18 @@ def register_precision_routes(app, core):
             story += [Paragraph("Cloud Inventory Platform — Services Estimate", styles["Title"]), Spacer(1, 12)]
             meta = [["Customer", rev.customer], ["Estimate", f"{rev.estimate.estimate_number} Rev {rev.revision_no}"], ["Opportunity", rev.opportunity_number], ["Proposal Date", str(rev.proposal_date or "")], ["Project Type", inp.project_type], ["Deployed Over", inp.deployed_over], ["CIP Release", release.label if release else inp.release_key], ["Configuration", db.get(ConfigurationVersion, rev.config_version_id).name]]
             table = Table(meta, colWidths=[120, 360]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#d9edf7"))])); story += [table, Spacer(1, 14), Paragraph("Estimate Summary", styles["Heading2"])]
-            data = [["Measure", "Hours", "Fees"], ["Customer Investment", format_hours(summary["investment_hours"]), f"{summary['fees']:,.2f}"], ["Plan Hours Not Billable", format_hours(summary["non_billable_hours"]), "—"], ["Total Internal Effort", format_hours(summary["total_internal_hours"]), "—"], ["Range Low", format_hours(summary["low_hours"]), f"{summary['low_fees']:,.2f}"], ["Range High", format_hours(summary["high_hours"]), f"{summary['high_fees']:,.2f}"]]
-            table = Table(data, colWidths=[220, 100, 140]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0089a8")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white)])); story += [table, Spacer(1, 14), Paragraph("Phase Summary", styles["Heading2"])]
-            pdata = [["Phase", "Investment Hours", "Not Billable"]] + [[phase, format_hours(value["investment"]), format_hours(value["non_billable"])] for phase, value in summary["phase_totals"].items()]
-            table = Table(pdata, colWidths=[240, 120, 120]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey)])); story.append(table)
+            if rev.engine_version == "CIP-1.0.2":
+                data = [["Measure", "Hours", "Fees"], ["Gross Task Effort", format_hours(summary["task_hours"]), "—"], ["Cloud Inventory Investment", format_hours(summary["investment_hours"]), "—"], ["Customer Billable", format_hours(summary["billable_hours"]), f"{summary['fees']:,.2f}"], ["Customer Range Low", format_hours(summary["low_billable_hours"]), f"{summary['low_fees']:,.2f}"], ["Customer Range High", format_hours(summary["high_billable_hours"]), f"{summary['high_fees']:,.2f}"]]
+                table = Table(data, colWidths=[220, 100, 140]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0089a8")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white)])); story += [table, Spacer(1, 14), Paragraph("Phase Funding Summary", styles["Heading2"])]
+                pdata = [["Phase", "Task", "Investment", "Customer Billable"]] + [[phase, format_hours(value["task"]), format_hours(value["investment"]), format_hours(value["billable"])] for phase, value in summary["phase_totals"].items()]
+                table = Table(pdata, colWidths=[170, 90, 100, 120]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey)])); story.append(table)
+            else:
+                # Locked historical CIP revisions retain their pinned earlier engine behavior and
+                # terminology rather than being silently reinterpreted by the current funding rule.
+                data = [["Measure", "Hours", "Fees"], ["Legacy Customer Investment", format_hours(summary["investment_hours"]), f"{summary['fees']:,.2f}"], ["Plan Hours Not Billable", format_hours(summary["non_billable_hours"]), "—"], ["Total Internal Effort", format_hours(summary["total_internal_hours"]), "—"], ["Range Low", format_hours(summary["low_hours"]), f"{summary['low_fees']:,.2f}"], ["Range High", format_hours(summary["high_hours"]), f"{summary['high_fees']:,.2f}"]]
+                table = Table(data, colWidths=[220, 100, 140]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0089a8")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white)])); story += [table, Spacer(1, 14), Paragraph("Phase Summary", styles["Heading2"])]
+                pdata = [["Phase", "Legacy Customer Investment", "Not Billable"]] + [[phase, format_hours(value["investment"]), format_hours(value["non_billable"])] for phase, value in summary["phase_totals"].items()]
+                table = Table(pdata, colWidths=[220, 150, 110]); table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), .25, colors.grey)])); story.append(table)
 
         doc.build(story)
         buf.seek(0)

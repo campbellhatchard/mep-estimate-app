@@ -1,0 +1,211 @@
+from __future__ import annotations
+
+import re
+
+import pytest
+from playwright.sync_api import expect
+
+from app.cip_models import CIPNonBillableAllocation, CIPRevisionInput, EstimateProduct
+from app.database import SessionLocal
+from app.models import EstimateRevision
+from app.services.calculation_v101 import calculation as mep_calculation
+from app.services.cip_calculation_v102 import calculation as cip_calculation
+from tests.e2e.support.flows import create_estimate, fill_and_blur, login, logout, select_and_save, url
+
+
+pytestmark = [pytest.mark.e2e, pytest.mark.release]
+
+
+@pytest.mark.smoke
+def test_authentication_active_and_inactive(page, app_url, user_specs):
+    active = user_specs["estimator"]
+    login(page, app_url, active.username, active.password)
+    expect(page.get_by_role("heading", name="Estimates")).to_be_visible()
+    logout(page)
+
+    inactive = user_specs["inactive"]
+    page.goto(url(app_url, "/login"))
+    page.get_by_label("Username").fill(inactive.username)
+    page.get_by_label("Password").fill(inactive.password)
+    page.get_by_role("button", name="Sign in").click()
+    expect(page).to_have_url(re.compile(r".*/login$"))
+    failure = page.get_by_role("alertdialog", name="Missing Required Information")
+    expect(failure).to_be_visible()
+    expect(failure).to_contain_text("Invalid username or password")
+
+
+@pytest.mark.smoke
+def test_role_union_readonly_and_tools_admin_boundaries(page, app_url, user_specs):
+    multi = user_specs["multi"]
+    login(page, app_url, multi.username, multi.password)
+    expect(page.get_by_role("link", name="Approvals")).to_be_visible()
+    expect(page.get_by_role("link", name="+ New Estimate")).to_be_visible()
+    logout(page)
+
+    tools = user_specs["tools"]
+    login(page, app_url, tools.username, tools.password)
+    expect(page.get_by_role("link", name="Calculation Data")).to_be_visible()
+    expect(page.get_by_role("link", name="SOW Templates")).to_be_visible()
+    expect(page.get_by_role("link", name="Users")).to_have_count(0)
+    denied = page.context.request.get(url(app_url, "/admin/users"), fail_on_status_code=False)
+    assert denied.status == 403
+    logout(page)
+
+    readonly = user_specs["readonly"]
+    login(page, app_url, readonly.username, readonly.password)
+    denied = page.context.request.post(
+        url(app_url, "/estimates/new"),
+        form={"product_type": "MEP"},
+        fail_on_status_code=False,
+        max_redirects=0,
+    )
+    assert denied.status == 403
+
+
+@pytest.mark.smoke
+def test_mep_creation_pins_product_configuration_and_engine(page, app_url, user_specs):
+    estimator = user_specs["estimator"]
+    login(page, app_url, estimator.username, estimator.password)
+    rid = create_estimate(page, app_url, "MEP")
+    expect(page.get_by_text(re.compile(r"Estimate \d{9}"))).to_be_visible()
+    expect(page.locator('input[name="product_type"]')).to_have_count(0)
+
+    with SessionLocal() as db:
+        rev = db.get(EstimateRevision, rid)
+        assert re.fullmatch(r"\d{9}", rev.estimate.estimate_number)
+        assert db.get(EstimateProduct, rev.estimate_id).product_type == "MEP"
+        assert rev.engine_version == "1.0.1"
+        assert rev.config_version_id is not None
+
+
+@pytest.mark.smoke
+def test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload(page, app_url, user_specs):
+    estimator = user_specs["estimator"]
+    login(page, app_url, estimator.username, estimator.password)
+    rid = create_estimate(page, app_url, "MEP")
+
+    fill_and_blur(page, rid, page.get_by_label("Number Of Go-Live Sites"), "1")
+    select_and_save(page, rid, page.get_by_label("Go-Live Type"), "Remote All")
+
+    jde = page.locator(".app-pair").filter(has_text="Cycle Count Directed").first.locator("select")
+    select_and_save(page, rid, jde, "Mod Required")
+
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_label("Deployed Over").select_option(label="Oracle Fusion")
+    expect(page.get_by_text("Cycle Count Directed")).to_have_count(0)
+    expect(page.get_by_text("Cycle Count", exact=True)).to_be_visible()
+
+    fusion = page.locator(".app-pair").filter(has_text=re.compile(r"^Cycle Count")).first.locator("select")
+    select_and_save(page, rid, fusion, "Mod Required")
+
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Estimate Detail").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/detail$"))
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
+    expect(row).to_be_visible()
+    row.locator('input[name^="mod_"]').fill("0.5")
+    row.locator('input[name^="notes_"]').fill("Controlled half-hour browser regression")
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Detail").click()
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
+    expect(row.locator(".line-total")).to_have_text("18.5")
+
+    with SessionLocal() as db:
+        rev = db.get(EstimateRevision, rid)
+        _, authoritative, _, _ = mep_calculation(db, rev)
+        assert authoritative["hours"] == pytest.approx(163.5)
+        assert authoritative["fees"] == pytest.approx(40875.0)
+        assert rev.calculated_hours == pytest.approx(authoritative["hours"])
+        assert rev.calculated_fees == pytest.approx(authoritative["fees"])
+
+    page.reload(wait_until="domcontentloaded")
+    row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
+    expect(row.locator('input[name^="mod_"]')).to_have_value("0.5")
+    expect(row.locator(".line-total")).to_have_text("18.5")
+
+
+@pytest.mark.smoke
+def test_cip_scope_quarter_hour_adjustments_and_investment_funding_semantics(page, app_url, user_specs):
+    estimator = user_specs["estimator"]
+    login(page, app_url, estimator.username, estimator.password)
+    rid = create_estimate(page, app_url, "CIP")
+
+    with SessionLocal() as db:
+        rev = db.get(EstimateRevision, rid)
+        inp = db.get(CIPRevisionInput, rid)
+        assert rev.engine_version == "CIP-1.0.2"
+        assert inp.release_key == "RELEASE_26_2"
+
+    desktop = page.locator(".app-pair").filter(has_text="INB Shipments").first.locator("select")
+    select_and_save(page, rid, desktop, "Mod Required")
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Estimate Detail").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/detail$"))
+
+    row = page.locator("tr").filter(has_text="INB Shipments").first
+    row.locator('input[name^="added_"]').fill("0.25")
+    row.locator('input[name^="adjustment_notes_"]').fill("Quarter-hour development adjustment")
+    row.locator('input[name^="test_adjust_"]').fill("0.25")
+    row.locator('input[name^="test_notes_"]').fill("Quarter-hour testing adjustment")
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Detail Adjustments").click()
+
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("link", name="Calculations").click()
+    expect(page).to_have_url(re.compile(rf".*/estimate/{rid}/calculations$"))
+    expect(page.get_by_text("Customer Billable Hours", exact=True)).to_be_visible()
+
+    with SessionLocal() as db:
+        rev = db.get(EstimateRevision, rid)
+        before_lines, before, _, _ = cip_calculation(db, rev)
+        before_pm = next(line for line in before_lines if line.key == "PLAN_PM")
+        before_contingency = next(line for line in before_lines if line.key == "PLAN_CONTINGENCY")
+
+    kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
+    expect(kickoff).to_be_visible()
+    kickoff.locator('input[type="number"][name^="investment_"]').fill("4")
+    kickoff.locator('input[name^="investment_notes_"]').fill("Approved Cloud Inventory investment")
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Save Calculation Adjustments").click()
+
+    with SessionLocal() as db:
+        rev = db.get(EstimateRevision, rid)
+        after_lines, after, _, _ = cip_calculation(db, rev)
+        after_pm = next(line for line in after_lines if line.key == "PLAN_PM")
+        after_contingency = next(line for line in after_lines if line.key == "PLAN_CONTINGENCY")
+        allocation = db.query(CIPNonBillableAllocation).filter_by(
+            revision_id=rid, line_key="PLAN_KICKOFF"
+        ).one()
+        assert allocation.hours == pytest.approx(4.0)
+        assert after["task_hours"] == pytest.approx(before["task_hours"])
+        assert after["total_internal_hours"] == pytest.approx(before["total_internal_hours"])
+        assert after["investment_hours"] == pytest.approx(before["investment_hours"] + 4)
+        assert after["billable_hours"] == pytest.approx(before["billable_hours"] - 4)
+        assert after["fees"] == pytest.approx(before["fees"] - 4 * float(rev.billing_rate))
+        assert after_pm.task_hours == pytest.approx(before_pm.task_hours)
+        assert after_contingency.task_hours == pytest.approx(before_contingency.task_hours)
+
+    page.reload(wait_until="domcontentloaded")
+    kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
+    expect(kickoff.locator('input[type="number"][name^="investment_"]')).to_have_value("4.0")
+
+
+@pytest.mark.smoke
+def test_estimate_lifecycle_locks_ui_and_server_mutation(page, app_url, user_specs):
+    actor = user_specs["multi"]
+    login(page, app_url, actor.username, actor.password)
+    rid = create_estimate(page, app_url, "MEP")
+
+    page.get_by_role("button", name="Submit for Review").click()
+    expect(page.get_by_text("REVIEW", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Approve / Final").click()
+    expect(page.get_by_text("APPROVED", exact=True)).to_be_visible()
+
+    expect(page.get_by_label("Customer:")).to_be_disabled()
+    denied = page.context.request.post(
+        url(app_url, f"/estimate/{rid}"),
+        form={"customer": "Forbidden Locked Mutation"},
+        fail_on_status_code=False,
+        max_redirects=0,
+    )
+    assert denied.status == 409
