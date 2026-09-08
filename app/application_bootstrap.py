@@ -22,6 +22,7 @@ from .precision_runtime import (
 from .revision_history import register_revision_history
 from .route_architecture import assert_final_route_owners
 from .schedule_exports_runtime import register_schedule_exports
+from .services.cip_calculation_v102 import install_cip_investment_funding
 from .small_project_sow import register_small_project_sow_templates
 from .small_project_template_admin import register_small_project_template_admin
 from .small_project_word_runtime import install_small_project_word_dispatch
@@ -75,6 +76,7 @@ def _register_estimate_capabilities(app, core) -> None:
     # Calculation/validation bindings must be installed before legacy route closures capture
     # them. Locked revisions continue to dispatch to their historical engine versions.
     install_calculation_precision(core)
+    install_cip_investment_funding(core)
     install_estimate_business_rule_controls(core)
 
     register_routes(app)
