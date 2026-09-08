@@ -170,3 +170,9 @@ def test_cip_calculation_page_can_allocate_investment_to_build_without_changing_
             assert development.investment_hours == pytest.approx(52.0)
             assert development.billable_hours == pytest.approx(100.0)
             assert summary["task_hours"] == pytest.approx(summary["billable_hours"] + summary["investment_hours"])
+
+        estimate_page = client.get(f"/estimate/{revision_id}")
+        assert estimate_page.status_code == 200
+        assert "Gross Task Hours" in estimate_page.text
+        assert "Cloud Inventory Investment" in estimate_page.text
+        assert "Customer Billable Hours" in estimate_page.text
