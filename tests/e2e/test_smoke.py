@@ -8,6 +8,7 @@ from playwright.sync_api import expect
 from app.cip_models import CIPNonBillableAllocation, CIPRevisionInput, EstimateProduct
 from app.database import SessionLocal
 from app.models import EstimateRevision
+from app.services.calculation_v101 import calculation as mep_calculation
 from app.services.cip_calculation_v101 import calculation as cip_calculation
 from tests.e2e.support.flows import create_estimate, fill_and_blur, login, logout, select_and_save, url
 
@@ -111,8 +112,11 @@ def test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload(page, app_ur
 
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid)
-        assert rev.calculated_hours == pytest.approx(163.5)
-        assert rev.calculated_fees == pytest.approx(40875.0)
+        _, authoritative, _, _ = mep_calculation(db, rev)
+        assert authoritative["hours"] == pytest.approx(163.5)
+        assert authoritative["fees"] == pytest.approx(40875.0)
+        assert rev.calculated_hours == pytest.approx(authoritative["hours"])
+        assert rev.calculated_fees == pytest.approx(authoritative["fees"])
 
     page.reload(wait_until="domcontentloaded")
     row = page.locator("tr", has=page.locator('input[value="Cycle Count"]')).first
@@ -155,7 +159,7 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
 
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
     expect(kickoff).to_be_visible()
-    kickoff.locator('input[name^="nonbillable_"]').fill("4")
+    kickoff.locator('input[type="number"][name^="nonbillable_"]').fill("4")
     kickoff.locator('input[name^="nonbillable_notes_"]').fill("Internal planning allocation")
     with page.expect_navigation(wait_until="domcontentloaded"):
         page.get_by_role("button", name="Save Calculation Adjustments").click()
@@ -174,7 +178,7 @@ def test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics(page, app_
 
     page.reload(wait_until="domcontentloaded")
     kickoff = page.locator("tr").filter(has_text="Project Kickoff Meeting").first
-    expect(kickoff.locator('input[name^="nonbillable_"]')).to_have_value("4.0")
+    expect(kickoff.locator('input[type="number"][name^="nonbillable_"]')).to_have_value("4.0")
 
 
 @pytest.mark.smoke
