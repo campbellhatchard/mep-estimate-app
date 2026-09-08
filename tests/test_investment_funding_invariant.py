@@ -1,73 +1,108 @@
 from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
-from app.cip_models import CIPNonBillableAllocation
+from app import cip_routes_detail
+from app.cip_models import CIPNonBillableAllocation, CIPScopeItem
+from app.database import SessionLocal
 from app.models import EstimateRevision
-from app.services.cip_phase_engine import calculation as cip_calculation
+from app.run import app
+
+
+def _login(client: TestClient) -> None:
+    response = client.post(
+        "/login",
+        data={"username": "Admin", "password": "TestPass123!"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def _create_cip(client: TestClient) -> int:
+    response = client.post(
+        "/estimates/new",
+        data={"product_type": "CIP"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    return int(response.headers["location"].rstrip("/").rsplit("/", 1)[-1])
 
 
 def _line(lines, key: str):
     return next(line for line in lines if line.key == key)
 
 
-@pytest.mark.parametrize("investment_hours", [4.0, 52.0])
-def test_cip_investment_reclassifies_funding_without_changing_effort_or_overhead(
-    db_session,
-    cip_revision_factory,
-    investment_hours,
-):
-    """Investment is funding allocation, not incremental project effort.
+def test_cip_investment_reclassifies_152_development_hours_without_changing_effort_or_overhead():
+    """152 task hours funded 52 internally become 100 customer-billable hours.
 
-    The business may fund part of an already-calculated task. That must reduce
-    customer billable hours dollar-for-dollar while leaving gross task effort
-    and all effort-derived calculations unchanged.
+    Investment is a funding allocation only. It must not add/remove task effort or
+    change PM, contingency, preparation, testing, schedule effort, or other
+    calculations whose basis is gross project effort.
     """
-    rev: EstimateRevision = cip_revision_factory()
+    with TestClient(app) as client:
+        _login(client)
+        revision_id = _create_cip(client)
 
-    before_lines, before_summary, *_ = cip_calculation(db_session, rev)
-    before_kickoff = _line(before_lines, "PLAN_KICKOFF")
-    before_pm = _line(before_lines, "PLAN_PM")
-    before_cont = _line(before_lines, "PLAN_CONTINGENCY")
+        with SessionLocal() as db:
+            revision = db.get(EstimateRevision, revision_id)
+            desktop_rows = (
+                db.query(CIPScopeItem)
+                .filter(
+                    CIPScopeItem.revision_id == revision_id,
+                    CIPScopeItem.category == "DESKTOP",
+                )
+                .order_by(CIPScopeItem.sort_order, CIPScopeItem.id)
+                .all()
+            )
+            assert len(desktop_rows) >= 19
+            for row in desktop_rows[:19]:
+                row.config_type = "Mod Required"
+            db.flush()
 
-    assert before_kickoff.task_hours >= investment_hours
+            before_lines, before_summary, *_ = cip_routes_detail.cip_calculation(db, revision)
+            development_before = _line(before_lines, "BUILD_DESKTOP_MOD")
+            pm_before = _line(before_lines, "BUILD_PM")
+            contingency_before = _line(before_lines, "BUILD_CONTINGENCY")
 
-    db_session.add(
-        CIPNonBillableAllocation(
-            revision_id=rev.id,
-            line_key="PLAN_KICKOFF",
-            hours=investment_hours,
-            notes="Approved internal investment",
-        )
-    )
-    db_session.flush()
+            assert development_before.task_hours == pytest.approx(152.0)
 
-    after_lines, after_summary, *_ = cip_calculation(db_session, rev)
-    after_kickoff = _line(after_lines, "PLAN_KICKOFF")
-    after_pm = _line(after_lines, "PLAN_PM")
-    after_cont = _line(after_lines, "PLAN_CONTINGENCY")
+            db.add(
+                CIPNonBillableAllocation(
+                    revision_id=revision_id,
+                    line_key="BUILD_DESKTOP_MOD",
+                    hours=52.0,
+                    notes="Approved Cloud Inventory investment",
+                )
+            )
+            db.flush()
 
-    # Gross effort does not change when funding source changes.
-    assert after_kickoff.task_hours == pytest.approx(before_kickoff.task_hours)
-    assert after_summary["total_internal_hours"] == pytest.approx(
-        before_summary["total_internal_hours"]
-    )
+            after_lines, after_summary, *_ = cip_routes_detail.cip_calculation(db, revision)
+            development_after = _line(after_lines, "BUILD_DESKTOP_MOD")
+            pm_after = _line(after_lines, "BUILD_PM")
+            contingency_after = _line(after_lines, "BUILD_CONTINGENCY")
 
-    # Investment increases and customer-billable effort falls dollar-for-dollar.
-    assert after_kickoff.investment_hours == pytest.approx(investment_hours)
-    assert after_kickoff.billable_hours == pytest.approx(
-        before_kickoff.task_hours - investment_hours
-    )
-    assert after_summary["investment_hours"] == pytest.approx(investment_hours)
-    assert after_summary["billable_hours"] == pytest.approx(
-        before_summary["billable_hours"] - investment_hours
-    )
+            # Gross effort is unchanged.
+            assert development_after.task_hours == pytest.approx(152.0)
+            assert after_summary["total_internal_hours"] == pytest.approx(
+                before_summary["total_internal_hours"]
+            )
 
-    # Funding allocation must not perturb derived effort.
-    assert after_pm.task_hours == pytest.approx(before_pm.task_hours)
-    assert after_cont.task_hours == pytest.approx(before_cont.task_hours)
+            # Funding is reclassified 152 task = 52 investment + 100 customer billable.
+            assert development_after.investment_hours == pytest.approx(52.0)
+            assert development_after.billable_hours == pytest.approx(100.0)
+            assert after_summary["investment_hours"] == pytest.approx(
+                before_summary["investment_hours"] + 52.0
+            )
+            assert after_summary["billable_hours"] == pytest.approx(
+                before_summary["billable_hours"] - 52.0
+            )
 
-    # Customer fees follow billable hours only.
-    assert after_summary["fees"] == pytest.approx(
-        before_summary["fees"] - investment_hours * float(rev.billing_rate)
-    )
+            # PM and contingency are effort-derived and therefore unchanged.
+            assert pm_after.task_hours == pytest.approx(pm_before.task_hours)
+            assert contingency_after.task_hours == pytest.approx(contingency_before.task_hours)
+
+            # Customer fees follow customer-billable hours only.
+            assert after_summary["fees"] == pytest.approx(
+                before_summary["fees"] - 52.0 * float(revision.billing_rate)
+            )
