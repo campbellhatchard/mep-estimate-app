@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from .permissions import can_edit_sow, SOW_PREPARE_ROLES
 from .cip_domain import revision_product
 from .cip_models import PRODUCT_MEP
 from .database import SessionLocal, get_db
@@ -21,7 +22,7 @@ from .sow_service import (
     sow_eligible, validate_finalize, validate_template, verify_approved_content,
 )
 
-PREP_ROLES = ("ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+PREP_ROLES = SOW_PREPARE_ROLES
 
 
 def _sow_or_404(db: Session, sid: int) -> SOW:
@@ -101,7 +102,7 @@ def _sow_context(db: Session, request: Request, core, sow: SOW, user):
     users = {u.id: u.username for u in db.query(User).all()}
     return {
         "request": request, "user": user, "sow": sow, "rev": rev, "estimate": rev.estimate,
-        "active_tab": "sow", "readonly": sow.status != "DRAFT", "history": history,
+        "active_tab": "sow", "readonly": not can_edit_sow(user, sow), "history": history,
         "approvers": _active_sow_approvers(db), "users": users,
         "agreement_types": AGREEMENT_TYPES, "invoice_frequencies": INVOICE_FREQUENCIES,
         "support_types": SUPPORT_TYPES, "device_types": DEVICE_TYPES,
