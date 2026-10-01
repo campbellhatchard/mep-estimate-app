@@ -33,7 +33,6 @@ def copy_cip_revision(db: Session, core, src: EstimateRevision, user, rebase: bo
     old_rows = db.query(CIPScopeItem).filter(CIPScopeItem.revision_id == src.id).order_by(CIPScopeItem.sort_order).all()
     if rebase:
         preserve = {(row.category, row.label.casefold()): row.config_type for row in old_rows if row.category in STANDARD_SCOPE}
-        sync_cip_catalog(db, rev, inp.release_key, force=True, preserve_by_label=preserve)
         old_rows = [row for row in old_rows if row.category not in STANDARD_SCOPE]
     for row in old_rows:
         db.add(CIPScopeItem(revision_id=rev.id, category=row.category, catalog_key=row.catalog_key, label=row.label,
@@ -45,6 +44,10 @@ def copy_cip_revision(db: Session, core, src: EstimateRevision, user, rebase: bo
     # ensure helpers query for existing keys; otherwise they cannot see the pending
     # rows and may create duplicate custom/dynamic slots in the same revision.
     db.flush()
+    if rebase:
+        # Catalog synchronization also ensures custom slots. Copy custom rows first
+        # so it sees the existing keys instead of inserting duplicates on rebase.
+        sync_cip_catalog(db, rev, inp.release_key, force=True, preserve_by_label=preserve)
     _ensure_custom_slots(db, rev); _ensure_dynamic_scope(db, rev, inp)
     record(db, event_type="REVISION_CREATED", user_id=user.id, estimate_id=rev.estimate_id, revision_id=rev.id,
         config_version_id=cv.id, old_value=f"Rev {src.revision_no}", new_value=f"Rev {rev.revision_no}",

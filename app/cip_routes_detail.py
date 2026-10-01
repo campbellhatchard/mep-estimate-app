@@ -74,11 +74,32 @@ def register_detail_routes(app, core, mep_detail_get, mep_detail_post, mep_calc_
             if not row and (adjust != 0 or notes): row = CalculationAdjustment(revision_id=rev.id, line_key=key); db.add(row); adjustments[key] = row
             if row and (row.adjust_hours != adjust or row.notes != notes):
                 record(db, event_type="CALCULATION_ADJUSTED", user_id=user.id, estimate_id=rev.estimate_id, revision_id=rev.id, field_name=key, old_value=f"{row.adjust_hours}|{row.notes}", new_value=f"{adjust}|{notes}", reason=notes or None); row.adjust_hours, row.notes = adjust, notes
-            nb_hours = _float(form, f"nonbillable_{idx}", 0) if phase == "Plan" else 0; nb_notes = str(form.get(f"nonbillable_notes_{idx}", "")).strip() if phase == "Plan" else ""
-            if nb_hours < 0: raise HTTPException(400, "Plan Hours Not Billable cannot be negative.")
-            if nb_hours != 0 and not nb_notes: raise HTTPException(400, f"Non-billable notes are required for {key}.")
+
+            # CIP-1.0.2: Investment is a funding allocation inside already-calculated Task
+            # Hours. It is available on every calculation line and never adds project effort.
+            # Accept the prior Plan-only field names as a request compatibility fallback, but
+            # all current UI and audit language uses Investment Hours.
+            investment_field = f"investment_{idx}"
+            investment_notes_field = f"investment_notes_{idx}"
+            if investment_field in form:
+                investment_hours = _float(form, investment_field, 0)
+                investment_notes = str(form.get(investment_notes_field, "")).strip()
+            else:
+                investment_hours = _float(form, f"nonbillable_{idx}", 0) if phase == "Plan" else 0
+                investment_notes = str(form.get(f"nonbillable_notes_{idx}", "")).strip() if phase == "Plan" else ""
+            if investment_hours < 0: raise HTTPException(400, "Investment Hours cannot be negative.")
+            if investment_hours != 0 and not investment_notes: raise HTTPException(400, f"Investment notes are required for {key}.")
             alloc = allocations.get(key)
-            if not alloc and (nb_hours != 0 or nb_notes): alloc = CIPNonBillableAllocation(revision_id=rev.id, line_key=key); db.add(alloc); allocations[key] = alloc
-            if alloc and (alloc.hours != nb_hours or alloc.notes != nb_notes):
-                record(db, event_type="CIP_NONBILLABLE_CHANGED", user_id=user.id, estimate_id=rev.estimate_id, revision_id=rev.id, field_name=key, old_value=f"{alloc.hours}|{alloc.notes}", new_value=f"{nb_hours}|{nb_notes}", reason=nb_notes or None); alloc.hours, alloc.notes = nb_hours, nb_notes
-        rev.schedule_needs_refresh = True; cip_recalculate_and_store(db, rev); db.commit(); return RedirectResponse(f"/estimate/{rid}/calculations", 303)
+            if not alloc and (investment_hours != 0 or investment_notes): alloc = CIPNonBillableAllocation(revision_id=rev.id, line_key=key); db.add(alloc); allocations[key] = alloc
+            if alloc and (alloc.hours != investment_hours or alloc.notes != investment_notes):
+                record(db, event_type="CIP_INVESTMENT_CHANGED", user_id=user.id, estimate_id=rev.estimate_id, revision_id=rev.id, field_name=key, old_value=f"{alloc.hours}|{alloc.notes}", new_value=f"{investment_hours}|{investment_notes}", reason=investment_notes or None); alloc.hours, alloc.notes = investment_hours, investment_notes
+
+        rev.schedule_needs_refresh = True
+        try:
+            db.flush()
+            cip_recalculate_and_store(db, rev)
+        except ValueError as exc:
+            db.rollback()
+            raise HTTPException(400, str(exc)) from exc
+        db.commit()
+        return RedirectResponse(f"/estimate/{rid}/calculations", 303)

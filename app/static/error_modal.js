@@ -101,8 +101,14 @@
     try {
       const action = submitter?.hasAttribute('formaction')
         ? submitter.formAction
-        : (form.action || window.location.href);
-      const body = submitter ? new FormData(form, submitter) : new FormData(form);
+        : (form.getAttribute('action') || window.location.href);
+      // A named input can shadow form.action. Preserve native form encoding too:
+      // ordinary large schedules are URL-encoded, while file uploads stay multipart.
+      const formData = submitter ? new FormData(form, submitter) : new FormData(form);
+      const enctype = submitter?.hasAttribute('formenctype')
+        ? submitter.formEnctype
+        : form.enctype;
+      const body = enctype === 'multipart/form-data' ? formData : new URLSearchParams(formData);
       const response = await fetch(action, {
         method: 'POST',
         body,

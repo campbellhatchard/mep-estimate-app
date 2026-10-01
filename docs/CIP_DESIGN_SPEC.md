@@ -1,5 +1,7 @@
 # CIP Integration Design — v0.3.0
 
+> CIP-1.0.2 funding semantics are superseded by [the approved Investment Hours clarification](INVESTMENT_FUNDING_CLARIFICATION.md). Prior engines retain the historical rules below.
+
 ## Baseline and release intent
 
 This build is based on the locked `baseline/v0.2.1-locked` MEP release. MEP calculation behavior is retained as the MEP implementation. CIP is introduced as a second product domain behind a product selection step.

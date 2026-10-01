@@ -28,7 +28,7 @@ def test_error_modal_uses_form_action_unless_submitter_explicitly_overrides_it()
 
     assert "submitter?.hasAttribute('formaction')" in js
     assert "submitter?.hasAttribute('formmethod')" in js
-    assert ": (form.action || window.location.href)" in js
+    assert ": (form.getAttribute('action') || window.location.href)" in js
     assert 'action="/estimate/{{rev.id}}/delete"' in base
 
 

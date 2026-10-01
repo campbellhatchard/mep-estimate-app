@@ -25,6 +25,16 @@ def generate_cip_schedule(db: Session, rev: EstimateRevision, replace: bool = Tr
 
     for phase in ["Plan", "Design", "Build", "Test", "Go Live"]:
         phase_total = summary["phase_totals"][phase]
+        # CIP-1.0.2 uses schedule non_bill_hours as the existing persistence column for
+        # internally funded Investment Hours. Customer billable budget is the remainder of
+        # gross Task Hours. Historical engine summaries do not expose `billable`, so preserve
+        # their pinned legacy schedule semantics as a compatibility fallback.
+        if "billable" in phase_total:
+            phase_investment = float(phase_total["investment"])
+            phase_billable = float(phase_total["billable"])
+        else:
+            phase_investment = float(phase_total["non_billable"])
+            phase_billable = float(phase_total["investment"])
         phase_row = ScheduleTask(
             revision_id=rev.id,
             task_id=f"CIP-{phase.upper().replace(' ', '-')}",
@@ -35,8 +45,8 @@ def generate_cip_schedule(db: Session, rev: EstimateRevision, replace: bool = Tr
             purpose="Generated phase budget; child tasks remain the authoritative schedule detail.",
             status="Planned",
             percent_complete=0,
-            non_bill_hours=float(phase_total["non_billable"]),
-            billable_hours_budgeted=float(phase_total["investment"]),
+            non_bill_hours=phase_investment,
+            billable_hours_budgeted=phase_billable,
             change_order_hours=0,
             hours_used=0,
             start_date=current,
@@ -58,6 +68,13 @@ def generate_cip_schedule(db: Session, rev: EstimateRevision, replace: bool = Tr
                 phase_start = phase_start or task_start
                 phase_end = task_end
                 current = business_add(task_end, 1)
+            if hasattr(line, "billable_hours"):
+                line_investment = float(line.investment_hours or 0)
+                line_billable = float(line.billable_hours or 0)
+            else:
+                # Locked historical CIP calculation lines retain the pre-1.0.2 meanings.
+                line_investment = float(line.non_billable_hours or 0)
+                line_billable = float(line.investment_hours or 0)
             db.add(
                 ScheduleTask(
                     revision_id=rev.id,
@@ -69,8 +86,8 @@ def generate_cip_schedule(db: Session, rev: EstimateRevision, replace: bool = Tr
                     purpose="Generated from the CIP calculation model.",
                     status="Planned",
                     percent_complete=0,
-                    non_bill_hours=float(line.non_billable_hours or 0),
-                    billable_hours_budgeted=float(line.investment_hours or 0),
+                    non_bill_hours=line_investment,
+                    billable_hours_budgeted=line_billable,
                     change_order_hours=0,
                     hours_used=0,
                     start_date=task_start,
