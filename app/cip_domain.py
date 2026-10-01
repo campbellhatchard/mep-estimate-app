@@ -206,5 +206,5 @@ def _cip_context(db: Session, rev: EstimateRevision):
         "custom_complexity": cfg.labels("CIP Custom Complexity"), "report_complexity": cfg.labels("CIP Report Complexity"),
         "desktop": scope("DESKTOP"), "mobile": scope("MOBILE"), "integrations": scope("INTEGRATION"),
         "custom_desktop": scope("CUSTOM_DESKTOP"), "custom_mobile": scope("CUSTOM_MOBILE"), "reports": scope("REPORT"),
-        "warning": warning, "readonly": rev.status in ("APPROVED", "FINAL", "SUPERSEDED"), "product_type": PRODUCT_CIP,
+        "warning": warning, "product_type": PRODUCT_CIP,
     }
