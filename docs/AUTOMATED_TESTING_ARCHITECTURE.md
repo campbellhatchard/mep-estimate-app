@@ -19,7 +19,7 @@ The browser layer is a release detector, not a second calculation engine. When a
 
 Automation follows this authority order:
 
-1. Current approved functional specification, presently v0.3.25.1, including approved superseding revisions if any.
+1. Current approved functional specification, presently v0.3.25.1, including the approved [Investment funding clarification](INVESTMENT_FUNDING_CLARIFICATION.md).
 2. Locked/approved Golden expected results and calculation-rule catalogs.
 3. Existing deterministic automated regression tests.
 4. Current application implementation where consistent with 1-3.
@@ -58,12 +58,12 @@ PR validation runs `pytest tests/e2e -m smoke`. Smoke focuses on fast release si
 - representative role boundaries;
 - MEP identity/config/engine pinning;
 - MEP autosave, ERP reset/reload and .5 detail precision;
-- CIP .25 detail precision and strict Plan Hours Not Billable customer-fee invariant;
+- CIP .25 detail precision and the approved Investment funding invariant;
 - lifecycle locking including server-side mutation rejection.
 
 ### Release
 
-Push to `main` and explicit Browser Tests runs use `pytest tests/e2e -m release`. Release adds:
+Every run executes the six smoke tests first. Pushes to `main`, explicit Browser Tests runs, and PRs carrying the `full-release-tests` label then execute `pytest tests/e2e -m "release and not smoke"` only if smoke passes. Ordinary PRs remain smoke-only. Adding or removing that label also triggers validation. Release adds:
 
 - final Administrator protection;
 - revision/rebase rationale and single working revision;
@@ -81,7 +81,7 @@ Smoke scenarios are also marked `release` so the broader gate is cumulative. A r
 
 Retries are zero locally and in CI. A first-fail/second-pass behavior is considered flakiness to investigate, not a reason to add automatic retries.
 
-On browser failure the workflow retains:
+JUnit XML reports are retained on successful and failed runs. On browser failure the workflow also retains:
 
 - Playwright trace;
 - failure screenshot;
@@ -117,7 +117,7 @@ These are deterministic domain tests, not 24 browser journeys. The expected-resu
 - specification conflict;
 - unresolved business-rule decision.
 
-The matrix does not override a more explicit approved invariant. For example, v0.3.25.1 explicitly requires CIP Plan Hours Not Billable to increase internal effort without increasing customer fees. A broad combined scenario cannot be used to legitimize contrary implementation behavior.
+The matrix does not override a more explicit approved invariant. The approved Investment funding clarification supersedes the conflicting v0.3.25.1 non-billable wording for CIP-1.0.2. Historical engines retain their prior semantics; their Golden expectations are not rewritten to match new behavior.
 
 ## CI release gate
 
@@ -125,18 +125,18 @@ The existing `Application Tests` workflow remains authoritative and separate. Br
 
 A deployment is not considered functionally clean merely because deterministic tests are green. Release-critical browser failures and specification conflicts must be reviewed as part of deployment validation.
 
-## Current Phase 1 execution evidence
+## Phase 1 remediation and execution evidence
 
-The latest clean smoke execution proved the complete CI path: ephemeral PostgreSQL 18 provisioned, Alembic completed, Chromium installed by GitHub Actions, the real FastAPI application started and passed `/health`, nine synthetic users were seeded, deterministic browser prerequisites passed, the randomized SOW protection secret remained masked, and traces/screenshots/application logs were retained on failure. The browser test command itself completed in approximately 10 seconds; the full browser job, including provisioning and browser installation, completed in roughly 77 seconds.
+The original smoke run exposed the CIP funding specification conflict and MEP Save Detail persistence defect. The user approved the funding interpretation in [Investment funding clarification](INVESTMENT_FUNDING_CLARIFICATION.md); CIP-1.0.2 implements it and the Explain assertion now checks that rule.
 
-Six smoke journeys were selected. Four passed: active/inactive authentication, representative RBAC boundaries, MEP identity/configuration/engine pinning, and lifecycle locking including a server-side mutation rejection. Two failed on reproducible P0 business behavior conflicts rather than browser-environment or selector failures.
+MEP Save Detail and Save Calculations now explicitly flush pending adjustments before recalculation. `SessionLocal` disables autoflush, so new rows were previously absent from the calculation query even though the later commit saved them. Four integration cases cover new/existing rows on both routes, inspecting persisted hours, fees, ranges and duration immediately after POST, before any GET could repair the summary. The unchanged browser scenario remains the independent 163.5 hours / $40,875 oracle.
 
-**CI-E2E-DEFECT-001 — CIP non-billable Plan hours affect customer Investment.** The approved v0.3.25.1 rule requires Plan Hours Not Billable to increase internal/Task Hours without increasing customer Investment Hours or fees. In the controlled scenario, adding 4 non-billable Project Kickoff hours increased Investment Hours from `262.25` to `263.25`. Current Plan PM logic includes Plan non-billable workload in fee-bearing Investment Hours. The assertion remains release-blocking.
-
-**CI-E2E-DEFECT-002 — MEP Save Detail does not persist the recalculated authoritative summary.** The browser successfully persists a required-note `0.5` MEP detail adjustment and renders the affected line at `18.5` hours. A fresh v1.0.1 authoritative domain calculation returns `163.5` hours / `$40,875`, but `EstimateRevision.calculated_hours` remains `163.0` after Save Detail. The saved detail and authoritative calculation are therefore ahead of the persisted revision summary. The assertion remains release-blocking.
-
-Business behavior has not been changed merely to make either test green. The defects should be resolved under normal change control, then the same strict smoke suite should be rerun before executing the broader release gate.
+Fresh verification results are recorded in `PHASE1_VERIFICATION.md` and PR #66. Do not infer passing release coverage from the presence of tests.
 
 ## Intentional Phase 1 exclusions
 
 Browser automation does not duplicate every formula, Golden scenario, migration or document XML assertion. Cross-browser certification, AI-based test selection, pixel comparison, load/performance testing and Production synthetic monitoring are outside Phase 1. Chromium expansion should occur only after the functional suite is stable and cross-browser certification has a business requirement.
+
+## Ongoing change control
+
+Every new feature, approved calculation rule, or defect fix must update the requirements-to-test matrix and add or update the appropriate deterministic, Golden, integration or browser scenario. Record the source of changed expectations. Run the matching release gates against the final commit before calling a deployment validated. A green test run alone does not configure Render deployment blocking or GitHub branch protection.

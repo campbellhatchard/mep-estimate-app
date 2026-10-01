@@ -1,6 +1,8 @@
 # Automated Test Coverage Matrix
 
-**Governing baseline:** Cloud Inventory Services Estimator No-Code Reconstruction Specification v0.3.25.1 / controlled reconstruction baseline `6f724b7dcce4ae3f798df2e5d0fa661c52a1a171`.
+**Governing baseline:** Cloud Inventory Services Estimator No-Code Reconstruction Specification v0.3.25.1 / controlled reconstruction baseline `6f724b7dcce4ae3f798df2e5d0fa661c52a1a171`, superseded for CIP-1.0.2 funding semantics by [the approved clarification](INVESTMENT_FUNDING_CLARIFICATION.md).
+
+**Current remediation:** local application commit `44d679f` passes 167 deterministic tests, including 24 Golden cases; 2 pre-existing superseded SOW tests are skipped. Browser statuses below marked Passing describe earlier runs, not this unpushed commit. Fresh PostgreSQL/Chromium evidence remains pending explicit push approval; see [verification record](PHASE1_VERIFICATION.md).
 
 Coverage status is deliberately evidence-based. `Implemented` means an automated test exists. It does not mean the requirement is passing. `Passing` is used only after an executed test demonstrates the expected result. `Blocked — defect` means the test is intentionally left failing because current implementation conflicts with the governing requirement.
 
@@ -12,9 +14,9 @@ Coverage status is deliberately evidence-based. `Implemented` means an automated
 | MEP product/config/engine pin | 1.3, 6.3 | `test_mep_creation_pins_product_configuration_and_engine` | Browser | P0 | **Passing — browser smoke** | YYYYMMNNN identity, MEP product immutable, configuration and engine pinned. |
 | MEP Golden matrix | 8, Appendix A | `test_mep_golden_scenario_matrix` | Golden/domain | P0 | **Passing — deterministic suite** | 12 fixed MEP scenarios. Exact expected values remain independent test-oracle data, not learned during execution. |
 | CIP Golden matrix | 9, Appendix B | `test_cip_golden_scenario_matrix` | Golden/domain | P0 | **Passing — deterministic suite** | 12 fixed CIP scenarios. EPP On Prem is tested independently from optional Gateway scope. |
-| MEP autosave / ERP reset / .5 adjustment | 6.3, 6.5, Section 15 | `test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload` | Browser + domain invariant | P0 | **Blocked — implementation defect** | Browser autosave and ERP reset/reload succeed; the detail line persists and renders `18.5`, and a fresh authoritative domain calculation returns `163.5` hours / `$40,875`, but the persisted revision summary remains stale at `163.0` hours after Save Detail. See CI-E2E-DEFECT-002. |
-| CIP .25 development/testing adjustment | 6.7 | `test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics` | Browser | P0 | **Passing within browser journey** | .25 development and test adjustments persist with required notes; the same journey then reaches the separate non-billable release blocker below. |
-| CIP Plan Hours Not Billable | 6.4, 6.8, 9, Section 15 | `test_cip_scope_quarter_hour_adjustments_and_nonbillable_semantics` | Browser + domain invariant | P0 | **Blocked — implementation defect** | Governing requirement: Plan Hours Not Billable increase internal/Task Hours and **must not increase customer Investment Hours or fees**. Adding 4 controlled non-billable Plan hours increased customer Investment Hours from `262.25` to `263.25`. See CI-E2E-DEFECT-001. |
+| MEP autosave / ERP reset / .5 adjustment | 6.3, 6.5, Section 15 | `test_mep_autosave_erp_reset_detail_adjustment_and_golden_reload` + `test_mep_save_adjustment_synchronizes_persisted_summary` | Browser + integration | P0 | Remediated; fresh browser verification pending | Persisted summary must equal authoritative 163.5 hours / $40,875; new/existing detail and calculation rows are covered before redirect reload. |
+| CIP .25 development/testing adjustment | 6.7 | `test_cip_scope_quarter_hour_adjustments_and_investment_funding_semantics` | Browser | P0 | Fresh browser verification pending | .25 development and testing adjustments persist with mandatory notes. |
+| CIP Investment funding allocation | Approved funding clarification; supersedes 6.4, 6.8, 9 and Section 15 wording | `test_cip_scope_quarter_hour_adjustments_and_investment_funding_semantics` + `test_investment_funding_invariant.py` + `test_investment_schedule_funding.py` | Browser + domain + integration | P0 | Deterministic regression passing; fresh browser verification pending | 152 gross = 52 Investment + 100 billable; PM, contingency and total effort unchanged; fees reflect billable hours only. |
 | Estimate lifecycle lock | 5.1, Section 15 | `test_estimate_lifecycle_locks_ui_and_server_mutation` | Browser | P0 | **Passing — browser smoke** | Draft -> Review -> Approved; locked inputs disabled and server-side mutation rejected. |
 | Revision/rebase rationale | 5.1, Section 15 | `test_revision_and_rebase_require_rationale_preserve_source_and_single_working_revision` | Browser | P0 | Implemented; release run pending | Reason mandatory; source immutable; new Draft; one working revision. |
 | Configuration SoD and historical pin | 5.2, Section 15 | `test_configuration_separation_of_duties_activation_and_historical_pin` | Browser + integration | P0 | Implemented; release run pending | Preparer self-review blocked; independent approval/activation; prior Active for same product retires; historical estimate pin unchanged. |
@@ -41,19 +43,13 @@ Coverage status is deliberately evidence-based. `Implemented` means an automated
 
 Section 15 is represented explicitly above: MEP/CIP creation, autosave, fractional precision, non-billable treatment, lifecycle locking, revision rationale, configuration separation of duties/activation, schedule staleness, Jira relationship controls, user-role preservation through existing deterministic coverage, SOW self-approval/rejection/template pinning, approved Word fidelity, four-family SOW coverage and access control.
 
-A mapped test does not imply a passing requirement. Phase 1 already demonstrates why that distinction matters: two release-critical requirements now have automated coverage and are intentionally red because current implementation does not satisfy the approved behavior.
+A mapped test does not imply a passing requirement. The current run and exact tested commit are recorded in `PHASE1_VERIFICATION.md` and PR #66.
 
-## Known defects discovered by Phase 1 automation
+## Defect resolution
 
-**CI-E2E-DEFECT-001 — CIP non-billable Plan hours can increase customer fees.**
+**CI-E2E-DEFECT-001 — specification conflict resolved by the user.** The previous terminology treated “Investment” as customer billable and added non-billable effort. The approved rule instead reallocates existing gross effort between internal Investment and Customer Billable hours. CIP-1.0.2 implements this; prior locked engines retain historical behavior. The obsolete Explain wording assertion now verifies the approved funding rule, with independent 152/52/100 calculation and schedule tests.
 
-The v0.3.25.1 specification requires Plan Hours Not Billable to increase internal/Task effort without increasing customer fees. In the controlled browser scenario, adding 4 non-billable hours to Project Kickoff persisted the allocation and increased non-billable/internal effort, but also increased customer Investment Hours from `262.25` to `263.25`. Current Plan PM calculation includes Plan non-billable workload in fee-bearing Investment Hours. This is classified as an **implementation defect**, not a test expectation to be changed.
-
-**CI-E2E-DEFECT-002 — MEP Save Detail leaves the persisted revision summary stale after a fractional detail adjustment.**
-
-The browser successfully changes the ERP-scoped application, records a required-note `0.5` detail adjustment and renders the adjusted line at `18.5` hours. A fresh call to the authoritative v1.0.1 MEP domain calculation returns `163.5` total hours and `$40,875`, proving the calculation domain recognizes the saved adjustment. The persisted `EstimateRevision.calculated_hours` remains `163.0`, however. The Save Detail workflow is therefore not leaving the persisted summary synchronized with the authoritative calculation result required by the controlled workflow. This is classified as an **implementation defect** and remains release-blocking.
-
-Neither defect is suppressed with retries, weakened assertions or alternate expected results. Business behavior must be corrected under normal change control, then these same tests should be rerun unchanged.
+**CI-E2E-DEFECT-002 — MEP adjustment summary persistence.** New DetailAdjustment rows were not visible to recalculation because autoflush is disabled. The same issue affected new CalculationAdjustment rows. Both save boundaries now flush before recalculation; four integration cases cover insertion and update and compare all persisted summary values to a fresh authoritative calculation before any page reload. The original browser expectation remains unchanged.
 
 ## Remaining evidence gaps
 

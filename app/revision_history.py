@@ -133,6 +133,7 @@ def _copy_mep_revision(db: Session, core, src: EstimateRevision, user, rebase: b
         new_value=f"Rev {rev.revision_no}",
         reason=("Rebased to current MEP configuration" if rebase else f"New MEP estimate revision from Rev {src.revision_no}"),
     )
+    db.flush()  # Include copied adjustments in queries with autoflush disabled.
     mep_recalculate_and_store(db, rev)
     db.commit()
     return rev
@@ -156,6 +157,7 @@ def _copy_cip_with_adjustments(db: Session, core, src: EstimateRevision, user, r
             notes=row.notes,
         ))
     _copy_assumptions(db, src, rev)
+    db.flush()  # Include copied effort adjustments and funding allocations.
     cip_recalculate_and_store(db, rev)
     db.commit()
     return rev

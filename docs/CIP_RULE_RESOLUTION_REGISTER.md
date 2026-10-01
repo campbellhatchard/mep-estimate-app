@@ -1,5 +1,7 @@
 # CIP Rule Resolution Register — v0.3.0
 
+> CIP-1.0.2 funding semantics are superseded by [the approved Investment Hours clarification](INVESTMENT_FUNDING_CLARIFICATION.md). Prior engines retain the historical rules below.
+
 | ID | Workbook condition / defect | v0.3.0 rule |
 |---|---|---|
 | CIP-RR-001 | Custom Desktop Very Complex contains `#REF!` | Use approved Data value: Very Complex = 80 development hours. |

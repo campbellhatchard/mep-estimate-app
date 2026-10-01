@@ -2,6 +2,7 @@ name: Browser Tests
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -77,12 +78,11 @@ jobs:
           exit 1
       - name: Seed synthetic browser users
         run: PYTHONPATH=. python tests/e2e/support/users.py
-      - name: Select browser suite
-        id: suite
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then echo "marker=smoke" >> "$GITHUB_OUTPUT"; else echo "marker=release" >> "$GITHUB_OUTPUT"; fi
-      - name: Run Chromium browser tests
-        run: PYTHONPATH=. pytest tests/e2e -m "${{ steps.suite.outputs.marker }}" --browser chromium --tracing retain-on-failure --screenshot only-on-failure --output=test-results/e2e/playwright -ra
+      - name: Run Chromium smoke tests
+        run: PYTHONPATH=. pytest tests/e2e -m smoke --browser chromium --tracing retain-on-failure --screenshot only-on-failure --output=test-results/e2e/smoke --junitxml=test-results/e2e/smoke.xml -ra
+      - name: Run additional Chromium release tests
+        if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-release-tests')
+        run: PYTHONPATH=. pytest tests/e2e -m 'release and not smoke' --browser chromium --tracing retain-on-failure --screenshot only-on-failure --output=test-results/e2e/release --junitxml=test-results/e2e/release.xml -ra
       - name: Collect application log
         if: always()
         run: tail -n 500 test-results/e2e/app.log > test-results/e2e/app-tail.log || true
@@ -92,5 +92,13 @@ jobs:
         with:
           name: browser-test-failure-${{ github.run_id }}
           path: test-results/e2e
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload browser test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-test-reports-${{ github.run_id }}
+          path: test-results/e2e/*.xml
           if-no-files-found: warn
           retention-days: 14

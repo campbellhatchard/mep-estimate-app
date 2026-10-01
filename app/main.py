@@ -295,6 +295,8 @@ async def save_detail(rid:int,request:Request,db:Session=Depends(get_db)):
             record(db,event_type="DETAIL_ADJUSTED",user_id=user.id,estimate_id=rev.estimate_id,revision_id=rev.id,field_name=key,old_value=f"{a.mod_hours}|{a.notes}|{a.description}",new_value=f"{mod}|{notes}|{desc}",reason=notes or None)
             a.mod_hours=mod; a.notes=notes; a.description=desc
     rev.schedule_needs_refresh=True
+    # SessionLocal disables autoflush; calculation queries must see newly added rows.
+    db.flush()
     recalculate_and_store(db,rev); db.commit()
     return RedirectResponse(f"/estimate/{rid}/detail",303)
 
@@ -323,6 +325,8 @@ async def save_calculations(rid:int,request:Request,db:Session=Depends(get_db)):
             record(db,event_type="CALCULATION_ADJUSTED",user_id=user.id,estimate_id=rev.estimate_id,revision_id=rev.id,field_name=key,old_value=f"{a.adjust_hours}|{a.notes}",new_value=f"{val}|{notes}",reason=notes or None)
             a.adjust_hours=val; a.notes=notes
     rev.schedule_needs_refresh=True
+    # Keep the persisted summary synchronized with new calculation adjustments too.
+    db.flush()
     recalculate_and_store(db,rev); db.commit()
     return RedirectResponse(f"/estimate/{rid}/calculations",303)
 

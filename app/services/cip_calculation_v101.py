@@ -21,6 +21,11 @@ def calculation(db: Session, rev: EstimateRevision):
     if rev.status in LOCKED_STATUSES and rev.engine_version != CIP_ENGINE_VERSION:
         return legacy_calculation(db, rev)
 
+    return calculate_precision_effort(db, rev)
+
+
+def calculate_precision_effort(db: Session, rev: EstimateRevision):
+    """Shared precision formulas, independent of the caller's version dispatcher."""
     lines, summary, details, detail_summary = legacy_calculation(db, rev)
     inp = db.get(CIPRevisionInput, rev.id)
     if not inp:

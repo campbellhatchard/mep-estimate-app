@@ -205,7 +205,15 @@ def test_every_mep_and_cip_calculation_line_has_explain_evidence():
             gateway = next(line for line in lines if line.key == "PLAN_GATEWAY")
             assert "GATEWAY_INSTALL_HOURS" in gateway.trace
             assert f"Configuration {cip_rev.config_version_id}" in gateway.trace
-            assert "Plan Hours Not Billable" in gateway.trace
+            assert "Investment Hours" in gateway.trace
+            assert "internal funding allocation within gross Task Hours" in gateway.trace
+            assert f"Customer Billable Hours are {gateway.billable_hours}" in gateway.trace
+            assert "Investment does not change gross effort" in gateway.trace
+            assert "PM, contingency, preparation, testing or schedule effort" in gateway.trace
+            assert "Plan Hours Not Billable" not in gateway.trace
+            pm = next(line for line in lines if line.key == "PLAN_PM")
+            assert "Plan Hours Not Billable" not in pm.trace
+            assert "gross Task Hours" in pm.trace
 
         cip_page = client.get(f"/estimate/{cip_rid}/calculations")
         assert cip_page.status_code == 200

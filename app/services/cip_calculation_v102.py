@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..cip_models import CIPNonBillableAllocation, CIPRevisionInput
 from ..models import EstimateRevision
 from .cip_detail_engine import CIPConfig, xrnd
-from .cip_calculation_v101 import calculation as calculation_v101
+from .cip_calculation_v101 import calculation as calculation_v101, calculate_precision_effort
 
 
 CIP_ENGINE_VERSION = "CIP-1.0.2"
@@ -41,6 +41,7 @@ def calculation(db: Session, rev: EstimateRevision):
         .all()
     )
     allocation_hours = {row.line_key: q2(float(row.hours or 0)) for row in allocations}
+    allocation_notes = {row.line_key: row.notes or "" for row in allocations}
 
     # V1.0.1 treated these rows as additive Plan effort. Suppress the allocations while
     # calculating the gross effort model, then restore the session state and apply them
@@ -50,7 +51,7 @@ def calculation(db: Session, rev: EstimateRevision):
         row.hours = 0
     try:
         with db.no_autoflush:
-            lines, summary, details, detail_summary = calculation_v101(db, rev)
+            lines, summary, details, detail_summary = calculate_precision_effort(db, rev)
     finally:
         for row in allocations:
             row.hours = original_hours[row.id]
@@ -71,6 +72,7 @@ def calculation(db: Session, rev: EstimateRevision):
         line.task_hours = gross_task
         line.investment_hours = investment
         line.non_billable_hours = investment  # backward-compatible persisted/export alias
+        line.non_billable_notes = allocation_notes.get(line.key, "")
         line.billable_hours = billable
 
     phase_totals = {}
@@ -149,6 +151,7 @@ def install_cip_investment_funding(core) -> None:
         cip_routes_estimate,
         cip_routes_exports,
         precision_runtime,
+        revision_history,
     )
 
     cip_public_module.calculation = calculation
@@ -159,6 +162,7 @@ def install_cip_investment_funding(core) -> None:
     cip_domain.cip_recalculate_and_store = recalculate_and_store
     cip_revision.cip_recalculate_and_store = recalculate_and_store
     cip_revision.CIP_ENGINE_VERSION = CIP_ENGINE_VERSION
+    revision_history.cip_recalculate_and_store = recalculate_and_store
     cip_routes_estimate.cip_recalculate_and_store = recalculate_and_store
     cip_routes_detail.cip_calculation = calculation
     cip_routes_detail.cip_recalculate_and_store = recalculate_and_store
@@ -192,6 +196,9 @@ def install_cip_investment_funding(core) -> None:
                         "adjusted build-scope investment", "adjusted gross build Task Hours"
                     ).replace(
                         "phase child investment", "phase child gross Task Hours"
+                    ).replace(
+                        "Workbook PM includes Plan Hours Not Billable in the management workload.",
+                        "PM is calculated from gross Task Hours before Investment funding allocations."
                     )
             return enriched
 

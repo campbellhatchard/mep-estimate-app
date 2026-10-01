@@ -57,6 +57,11 @@ def install_calculation_precision(core):
     core.recalculate_and_store = mep_recalculate
     core.ENGINE_VERSION = MEP_ENGINE_VERSION
 
+    # Revision copy routes capture these imports before precision is installed.
+    from . import revision_history
+    revision_history.mep_recalculate_and_store = mep_recalculate
+    revision_history.ENGINE_VERSION = MEP_ENGINE_VERSION
+
     from .services import schedule as mep_schedule_module
     mep_schedule_module.calculation = mep_calculation
 

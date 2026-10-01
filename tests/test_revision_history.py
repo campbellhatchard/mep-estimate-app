@@ -17,7 +17,7 @@ from app.models import (
     EstimateRevision,
 )
 from app.cip_models import CIPNonBillableAllocation, CIPScopeItem
-from app.services.calculation import recalculate_and_store as mep_recalculate_and_store
+from app.services.calculation_v101 import recalculate_and_store as mep_recalculate_and_store
 from app.services.cip_calculation import recalculate_and_store as cip_recalculate_and_store
 
 
@@ -65,6 +65,8 @@ def test_mep_revision_history_preserves_approved_versions_and_adjustments():
                 adjust_hours=4,
                 notes='Approved kickoff adjustment',
             ))
+            # Establish an authoritative source, not the pre-flush stale summary.
+            db.flush()
             mep_recalculate_and_store(db, rev1)
             db.commit()
             source_hours = rev1.calculated_hours
@@ -165,6 +167,7 @@ def test_cip_revision_copy_preserves_scope_phase_and_nonbillable_adjustments():
                 hours=2,
                 notes='Customer investment absorbed internally',
             ))
+            db.flush()
             cip_recalculate_and_store(db, rev1)
             db.commit()
             source_hours = rev1.calculated_hours
