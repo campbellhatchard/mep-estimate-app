@@ -45,3 +45,15 @@ After approval: push this commit and its documentation follow-up to the existing
 ## Remaining scope
 
 CIP-1.0.2 supports the approved funding allocation. MEP funding allocation is not yet implemented; MEP changes here address calculation persistence and version-correct revision copying. Golden provenance hardening and additional lifecycle/document edge cases remain Phase 2 work, as described in the coverage matrix.
+
+## First published CI run (2026-10-01)
+
+User approved publication. The connected GitHub app published the identical tree as `e56377d42e53ffb6a7f9ca2f97675006b69a5a0d`; prior publication-block notes above are historical. Application Tests run `36919728468` passed: 167 regression tests, 2 skips, 24 Golden cases included; focused SOW gates 6 passed/1 skipped; assumptions gate 1 passed. Browser run `36919728406`: prerequisites 10 passed; smoke **6/6 passed in 10.09s**; release-only **1 passed/9 failed in 110.65s**, zero test retries. Failure artifact `11190729203` retains traces/screenshots/application logs; report artifact `11190749046` retains JUnit.
+
+Trace-based classification:
+- Implementation: shared fetch form handler discarded the HTTP 200 revision-rationale HTML by reloading the estimate; revision-entry forms now use native submission.
+- Implementation: a hidden input named `action` shadowed `form.action`, causing Jira UI POST to `/estimate/9/[object HTMLInputElement]` (404). The handler now reads the action attribute.
+- Implementation: every form was converted to multipart; a full schedule exceeded the parser's 1,000-field limit. The handler now preserves normal URL encoding for ordinary forms and multipart for explicit file uploads, without lifting server limits.
+- Test harness: successful fetch-backed POST clicks returned before navigation, leaving stale URL/state reads; release helpers now wait for navigation, not sleeps or retries. Configuration confirmations are accepted explicitly, and Small Project uses the actual `Create Small Project SOW` control. All business assertions remain.
+
+Focused deterministic verification of the form/rationale/Jira/harness changes: **18 passed**. A new CI run is required before accepting these changes as browser-verified.

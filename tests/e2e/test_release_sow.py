@@ -13,42 +13,42 @@ from app.database import SessionLocal
 from app.models import AuditEvent
 from app.sow_models import SOW
 from app.small_project_sow import SOW_TEMPLATE_CIP_SMALL_PROJECT, SOW_TEMPLATE_MEP_SMALL_PROJECT
-from tests.e2e.support.flows import create_estimate, login, logout, select_and_save, url
+from tests.e2e.support.flows import click_and_wait, create_estimate, login, logout, select_and_save, url
 
 
 pytestmark = [pytest.mark.e2e, pytest.mark.release]
 
 
 def _approve_estimate(page, rid: int) -> None:
-    page.get_by_role("button", name="Submit for Review").click()
-    page.get_by_role("button", name="Approve / Final").click()
+    click_and_wait(page, page.get_by_role("button", name="Submit for Review"))
+    click_and_wait(page, page.get_by_role("button", name="Approve / Final"))
     expect(page.get_by_text("APPROVED", exact=True)).to_be_visible()
 
 
 def _prepare_mep_net_new_sow(page, rid: int) -> int:
     page.get_by_role("link", name="SOW").click()
-    page.get_by_role("button", name="Prepare SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Prepare SOW"))
     sid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     page.get_by_label("ERP Version").fill("9.2.8")
     page.get_by_label("ERP Base Code Version").fill("E920")
     page.get_by_label("ERP Tools Release").fill("9.2.7.3")
     page.get_by_label("MEP Product Version").fill("9.5.0")
     page.get_by_label("ERP Deployment Model").fill("Customer Managed")
-    page.get_by_role("button", name="Save SOW Details").click()
+    click_and_wait(page, page.get_by_role("button", name="Save SOW Details"))
     return sid
 
 
 def _send_to_approver(page, approver_name: str) -> None:
-    page.get_by_role("button", name="Finalize SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Finalize SOW"))
     page.get_by_label("Assign SOW Approver").select_option(label=approver_name)
-    page.get_by_role("button", name="Send for Approval").click()
+    click_and_wait(page, page.get_by_role("button", name="Send for Approval"))
 
 
 def _approve_sow_as(page, app_url: str, sid: int, spec) -> None:
     logout(page)
     login(page, app_url, spec.username, spec.password)
     page.goto(url(app_url, f"/sow/{sid}"))
-    page.get_by_role("button", name="Approve SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Approve SOW"))
     expect(page.get_by_role("heading", name="Approved SOW")).to_be_visible()
 
 
@@ -68,13 +68,13 @@ def test_mep_net_new_sow_rejection_revision_approval_and_audit(page, app_url, us
     login(page, app_url, approver.username, approver.password)
     page.goto(url(app_url, f"/sow/{sid}"))
     page.get_by_label("Rejection Reason").fill("Controlled E2E rejection evidence")
-    page.get_by_role("button", name="Reject SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Reject SOW"))
     expect(page.get_by_role("heading", name="Rejected")).to_be_visible()
 
     logout(page)
     login(page, app_url, author.username, author.password)
     page.goto(url(app_url, f"/sow/{sid}"))
-    page.get_by_role("button", name="Create SOW Revision").click()
+    click_and_wait(page, page.get_by_role("button", name="Create SOW Revision"))
     sid2 = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     assert sid2 != sid
     _send_to_approver(page, approver.username)
@@ -100,7 +100,7 @@ def test_mep_small_project_full_workflow(page, app_url, user_specs):
     _approve_estimate(page, rid)
 
     page.get_by_role("link", name="SOW").click()
-    page.get_by_role("button", name="Prepare SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Create Small Project SOW"))
     sid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     expect(page.get_by_role("heading", name="MEP Small Project Statement of Work")).to_be_visible()
     page.get_by_label("ERP / System Version").fill("9.2.8")
@@ -108,7 +108,7 @@ def test_mep_small_project_full_workflow(page, app_url, user_specs):
     if deliverable.count() == 0:
         deliverable = page.locator("section").filter(has_text="Modular Deliverables").locator("tbody tr").first
     deliverable.locator('input[type="checkbox"]').check()
-    page.get_by_role("button", name="Save SOW Details").click()
+    click_and_wait(page, page.get_by_role("button", name="Save SOW Details"))
     _send_to_approver(page, approver.username)
     _approve_sow_as(page, app_url, sid, approver)
 
@@ -124,18 +124,18 @@ def test_cip_net_new_and_small_project_route_to_correct_sow_families(page, app_u
     net_rid = create_estimate(page, app_url, "CIP")
     _approve_estimate(page, net_rid)
     page.get_by_role("link", name="SOW").click()
-    page.get_by_role("button", name="Prepare SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Prepare SOW"))
     net_sid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     expect(page.get_by_role("heading", name=re.compile("CIP.*Statement of Work"))).to_be_visible()
 
     page.goto(url(app_url, "/estimates/new"))
-    page.get_by_role("button", name="Create CIP Estimate").click()
+    click_and_wait(page, page.get_by_role("button", name="Create CIP Estimate"))
     sp_rid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     select_and_save(page, sp_rid, page.get_by_label("Customer Type:"), "Install_Base")
     select_and_save(page, sp_rid, page.get_by_label("Project Type:"), "Small Project")
     _approve_estimate(page, sp_rid)
     page.get_by_role("link", name="SOW").click()
-    page.get_by_role("button", name="Prepare SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Create Small Project SOW"))
     sp_sid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     expect(page.get_by_role("heading", name="CIP Small Project Statement of Work")).to_be_visible()
 

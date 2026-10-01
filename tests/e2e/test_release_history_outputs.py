@@ -8,7 +8,7 @@ from app.database import SessionLocal
 from app.models import ConfigurationVersion, EstimateRevision
 from app.runtime_time import utc_now
 from app.sow_models import SOW, SOWTemplateVersion
-from tests.e2e.support.flows import create_estimate, login, logout, url
+from tests.e2e.support.flows import click_and_wait, create_estimate, login, logout, url
 
 
 pytestmark = [pytest.mark.e2e, pytest.mark.release]
@@ -19,24 +19,24 @@ def test_historical_estimate_and_sow_remain_pinned_after_new_config_and_template
     approver = user_specs["sow_approver"]
     login(page, app_url, author.username, author.password)
     rid = create_estimate(page, app_url, "MEP")
-    page.get_by_role("button", name="Submit for Review").click()
-    page.get_by_role("button", name="Approve / Final").click()
+    click_and_wait(page, page.get_by_role("button", name="Submit for Review"))
+    click_and_wait(page, page.get_by_role("button", name="Approve / Final"))
     page.get_by_role("link", name="SOW").click()
-    page.get_by_role("button", name="Prepare SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Prepare SOW"))
     sid = int(page.url.rstrip("/").rsplit("/", 1)[-1])
     page.get_by_label("ERP Version").fill("9.2.8")
     page.get_by_label("ERP Base Code Version").fill("E920")
     page.get_by_label("ERP Tools Release").fill("9.2.7.3")
     page.get_by_label("MEP Product Version").fill("9.5.0")
     page.get_by_label("ERP Deployment Model").fill("Customer Managed")
-    page.get_by_role("button", name="Save SOW Details").click()
-    page.get_by_role("button", name="Finalize SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Save SOW Details"))
+    click_and_wait(page, page.get_by_role("button", name="Finalize SOW"))
     page.get_by_label("Assign SOW Approver").select_option(label=approver.username)
-    page.get_by_role("button", name="Send for Approval").click()
+    click_and_wait(page, page.get_by_role("button", name="Send for Approval"))
     logout(page)
     login(page, app_url, approver.username, approver.password)
     page.goto(url(app_url, f"/sow/{sid}"))
-    page.get_by_role("button", name="Approve SOW").click()
+    click_and_wait(page, page.get_by_role("button", name="Approve SOW"))
 
     with SessionLocal() as db:
         rev = db.get(EstimateRevision, rid); sow = db.get(SOW, sid)

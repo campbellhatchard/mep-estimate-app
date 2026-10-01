@@ -10,7 +10,7 @@ from app.cip_domain import active_config_for_product
 from app.cip_models import PRODUCT_CIP, PRODUCT_MEP
 from app.database import SessionLocal
 from app.models import AuditEvent, ConfigItem, ConfigurationVersion, EstimateRevision, User
-from tests.e2e.support.flows import create_estimate, login, logout, url
+from tests.e2e.support.flows import click_and_wait, create_estimate, login, logout, url
 
 
 pytestmark = [pytest.mark.e2e, pytest.mark.release]
@@ -60,8 +60,8 @@ def test_revision_and_rebase_require_rationale_preserve_source_and_single_workin
     actor = user_specs["multi"]
     login(page, app_url, actor.username, actor.password)
     rid = create_estimate(page, app_url, "MEP")
-    page.get_by_role("button", name="Submit for Review").click()
-    page.get_by_role("button", name="Approve / Final").click()
+    click_and_wait(page, page.get_by_role("button", name="Submit for Review"))
+    click_and_wait(page, page.get_by_role("button", name="Approve / Final"))
 
     with SessionLocal() as db:
         source = db.get(EstimateRevision, rid)
@@ -69,10 +69,10 @@ def test_revision_and_rebase_require_rationale_preserve_source_and_single_workin
         source_config = source.config_version_id
         estimate_id = source.estimate_id
 
-    page.get_by_role("button", name="New Revision").click()
+    click_and_wait(page, page.get_by_role("button", name="New Revision"))
     expect(page.get_by_role("heading", name="Create New Revision")).to_be_visible()
     page.get_by_label("Reason for revision").fill("Customer requested controlled revision testing.")
-    page.get_by_role("button", name="Create New Revision").click()
+    click_and_wait(page, page.get_by_role("button", name="Create New Revision"))
     rid2 = int(page.url.rstrip("/").rsplit("/", 1)[-1])
 
     with SessionLocal() as db:
@@ -97,12 +97,12 @@ def test_revision_and_rebase_require_rationale_preserve_source_and_single_workin
     assert existing.headers["location"].endswith(f"/estimate/{rid2}")
 
     page.goto(url(app_url, f"/estimate/{rid2}"))
-    page.get_by_role("button", name="Submit for Review").click()
-    page.get_by_role("button", name="Approve / Final").click()
-    page.get_by_role("button", name="Rebase to Current Model").click()
+    click_and_wait(page, page.get_by_role("button", name="Submit for Review"))
+    click_and_wait(page, page.get_by_role("button", name="Approve / Final"))
+    click_and_wait(page, page.get_by_role("button", name="Rebase to Current Model"))
     expect(page.get_by_role("heading", name="Rebase to Current Model")).to_be_visible()
     page.get_by_label("Reason for revision").fill("Rebase to current controlled Calculation Data.")
-    page.get_by_role("button", name="Create Rebased Revision").click()
+    click_and_wait(page, page.get_by_role("button", name="Create Rebased Revision"))
     rid3 = int(page.url.rstrip("/").rsplit("/", 1)[-1])
 
     with SessionLocal() as db:
@@ -139,16 +139,17 @@ def test_configuration_separation_of_duties_activation_and_historical_pin(
         old_cip_id = old_cip.id
 
     page.goto(url(app_url, "/data?product=MEP"))
-    page.get_by_role("button", name="Create MEP Draft from Active").click()
+    click_and_wait(page, page.get_by_role("button", name="Create MEP Draft from Active"))
     draft_id = int(parse_qs(urlparse(page.url).query)["version"][0])
 
     row = page.locator("tr").filter(has_text="UNIT_TEST_FACTOR").first
     row.get_by_text("Edit", exact=True).click()
     row.locator('input[name="value_number"]').fill("0.25")
     row.locator('input[name="reason"]').fill("E2E independent governance validation")
-    row.get_by_role("button", name="Save").click()
+    click_and_wait(page, row.get_by_role("button", name="Save", exact=True))
 
-    page.get_by_role("button", name="Submit for Review").click()
+    page.once("dialog", lambda dialog: dialog.accept())
+    click_and_wait(page, page.get_by_role("button", name="Submit for Review"))
     expect(page.get_by_text("Independent review required.")).to_be_visible()
 
     self_review = page.context.request.post(
@@ -166,8 +167,9 @@ def test_configuration_separation_of_duties_activation_and_historical_pin(
     approve_form.get_by_label("Review reason").fill(
         "Independent calculation and regression evidence reviewed."
     )
-    approve_form.get_by_role("button", name="Approve Configuration").click()
-    page.get_by_role("button", name="Activate Approved Version").click()
+    click_and_wait(page, approve_form.get_by_role("button", name="Approve Configuration"))
+    page.once("dialog", lambda dialog: dialog.accept())
+    click_and_wait(page, page.get_by_role("button", name="Activate Approved Version"))
 
     try:
         with SessionLocal() as db:

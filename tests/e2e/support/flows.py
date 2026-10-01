@@ -55,3 +55,9 @@ def select_and_save(page: Page, rid: int, locator, value: str) -> None:
 
 def row_by_text(page: Page, text: str):
     return page.locator("tr").filter(has_text=text).first
+
+
+def click_and_wait(page: Page, locator) -> None:
+    """Wait for the fetch-backed form redirect/reload before the next action."""
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        locator.click()

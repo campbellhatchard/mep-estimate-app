@@ -13,7 +13,7 @@
   {% if rev.status=='DRAFT' %}<form method="post" action="/estimate/{{rev.id}}/status/submit"><button>Submit for Review</button></form>{% endif %}
   {% if rev.status=='REVIEW' and user.has_role('ADMIN','REVIEWER','APPROVER') %}<form method="post" action="/estimate/{{rev.id}}/status/return"><button>Return to Draft</button></form>{% endif %}
   {% if rev.status=='REVIEW' and user.has_role('ADMIN','APPROVER') %}<form method="post" action="/estimate/{{rev.id}}/status/approve"><button class="success">Approve / Final</button></form>{% endif %}
-  {% if rev.status in ['APPROVED','FINAL'] %}<form method="post" action="/estimate/{{rev.id}}/new-revision"><button>New Revision</button></form><form method="post" action="/estimate/{{rev.id}}/new-revision?rebase=true"><button>Rebase to Current Model</button></form>{% endif %}
+  {% if rev.status in ['APPROVED','FINAL'] %}<form method="post" data-native-submit="true" action="/estimate/{{rev.id}}/new-revision"><button>New Revision</button></form><form method="post" data-native-submit="true" action="/estimate/{{rev.id}}/new-revision?rebase=true"><button>Rebase to Current Model</button></form>{% endif %}
  </div>
 </div>
 <form id="estimateForm" method="post">
