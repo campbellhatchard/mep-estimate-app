@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .cip_domain import _take_route, revision_product
 from .database import get_db
 from .models import AuditEvent, ConfigurationVersion, EstimateRevision, User
@@ -192,7 +193,7 @@ def register_revision_rationale_controls(app, core) -> None:
         db: Session = Depends(get_db),
     ):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         src = core.revision_or_404(db, rid)
         if src.status not in LOCKED_STATUSES:
             raise HTTPException(
