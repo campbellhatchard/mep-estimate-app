@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .database import Base, get_db
 from .models import EstimateRevision
 from .services.audit import record
@@ -34,7 +35,7 @@ if not hasattr(EstimateRevision, "assumptions"):
 
 def _editable_revision(core, db: Session, request: Request, rid: int):
     user = core.current_user(request, db)
-    core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+    core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
     rev = core.revision_or_404(db, rid)
     if rev.status in ("APPROVED", "FINAL", "SUPERSEDED"):
         raise HTTPException(409, "Approved/final/superseded revisions are locked.")
