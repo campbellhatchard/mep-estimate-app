@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import Integer, String, text
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .database import Base, get_db
 from .models import ConfigItem, Estimate, EstimateCustomApplication, EstimateRevision
 from .route_architecture import remove_route
@@ -86,7 +87,7 @@ def register_numbered_estimate_route(app, core) -> None:
     @app.post("/estimates/new")
     def create_numbered_estimate(request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
 
         business_day = current_business_date()
         try:
