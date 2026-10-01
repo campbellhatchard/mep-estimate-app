@@ -6,15 +6,16 @@
   <div class="page-title-row">
     <div><h1>Schedule</h1><div class="subtle">{{ rev.customer or 'Customer not entered' }} · Estimate {{ estimate.estimate_number }} Rev {{ rev.revision_no }} · Generated from estimate</div></div>
     <div class="action-row">
-      {% if rev.status == 'DRAFT' %}<form method="post" action="/estimate/{{ rev.id }}/schedule" onsubmit="return confirm('Regenerate the schedule from the current estimate? Existing manual schedule edits and explicit Jira relationships will be replaced.');"><input type="hidden" name="action" value="regenerate"><button class="button secondary">Regenerate Schedule</button></form>{% endif %}
+      {% if not readonly and rev.status == 'DRAFT' %}<form method="post" action="/estimate/{{ rev.id }}/schedule" onsubmit="return confirm('Regenerate the schedule from the current estimate? Existing manual schedule edits and explicit Jira relationships will be replaced.');"><input type="hidden" name="action" value="regenerate"><button class="button secondary">Regenerate Schedule</button></form>{% endif %}
       <a class="button secondary" href="/estimate/{{ rev.id }}/jira-relationships">Jira Relationships</a>
       <a class="button secondary" href="/estimate/{{ rev.id }}/schedule.csv">Export Schedule CSV</a>
       <a class="button secondary" href="/estimate/{{ rev.id }}/jira.csv">Export Jira CSV</a>
     </div>
   </div>
 
+  {% if not tasks %}<p class="schedule-note">The Schedule has not been generated yet. An estimate author must generate it before it can be viewed or exported.</p>{% endif %}
   <div class="workbook-bar">Project Schedule</div>
-  <div class="schedule-note {% if rev.schedule_needs_refresh %}stale-warning{% endif %}">{% if rev.schedule_needs_refresh %}<strong>Schedule Requires Refresh.</strong> The estimate has changed since this schedule was generated. {% endif %}Budget hours are generated from the estimate. Resource, status, completion, change order hours, hours used, comments, and dates are editable while the revision is Draft. Schedule CSV exports these persisted values exactly as currently stored; it does not regenerate a stale schedule.</div>
+  <div class="schedule-note {% if rev.schedule_needs_refresh %}stale-warning{% endif %}">{% if rev.schedule_needs_refresh %}<strong>Schedule Requires Refresh.</strong> The estimate has changed since this schedule was generated. {% endif %}Budget hours are generated from the estimate. Resource, status, completion, change order hours, hours used, comments, and dates are editable by estimate authors while the revision is Draft. Schedule CSV exports these persisted values exactly as currently stored; it does not regenerate a stale schedule.</div>
   <form method="post" action="/estimate/{{ rev.id }}/schedule">
     <div class="schedule-scroll">
       <table class="schedule-grid">
@@ -36,26 +37,26 @@
             <td>{{ t.task_owner|ci_text }}</td>
             <td class="text-cell">{{ t.description|ci_text }}</td>
             <td class="text-cell">{{ t.purpose|ci_text }}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input name="resource_{{ t.id }}" value="{{ t.resource_assigned }}">{% else %}{{ t.resource_assigned }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<select name="status_{{ t.id }}">{% for s in statuses %}<option value="{{s}}" {% if s==t.status %}selected{% endif %}>{{ s|ci_term }}</option>{% endfor %}</select>{% else %}{{ t.status|ci_term }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" min="0" max="100" name="pct_{{ t.id }}" value="{{ t.percent_complete }}">{% else %}{{ '%.0f'|format(m.percent*100) }}%{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input name="resource_{{ t.id }}" value="{{ t.resource_assigned }}">{% else %}{{ t.resource_assigned }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<select name="status_{{ t.id }}">{% for s in statuses %}<option value="{{s}}" {% if s==t.status %}selected{% endif %}>{{ s|ci_term }}</option>{% endfor %}</select>{% else %}{{ t.status|ci_term }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" min="0" max="100" name="pct_{{ t.id }}" value="{{ t.percent_complete }}">{% else %}{{ '%.0f'|format(m.percent*100) }}%{% endif %}</td>
             <td class="num">{{ '%.1f'|format(m.non_bill) }}</td>
             <td class="num calc-cell">{{ '%.1f'|format(m.budget) }}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" name="co_{{ t.id }}" value="{{ t.change_order_hours }}">{% else %}{{ '%.1f'|format(m.co) }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" min="0" name="used_{{ t.id }}" value="{{ t.hours_used }}">{% else %}{{ '%.1f'|format(m.used) }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" name="co_{{ t.id }}" value="{{ t.change_order_hours }}">{% else %}{{ '%.1f'|format(m.co) }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input class="num short" type="number" step="0.25" min="0" name="used_{{ t.id }}" value="{{ t.hours_used }}">{% else %}{{ '%.1f'|format(m.used) }}{% endif %}</td>
             <td class="num calc-cell {% if remaining < 0 %}negative{% endif %}">{{ '%.1f'|format(remaining) }}</td>
             <td class="calc-cell"><span class="trend {% if remaining < 0 %}bad{% else %}good{% endif %}">{{ m.trend }}</span></td>
             <td class="num calc-cell">{{ '%.1f'|format(eac) }}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input class="comment-input" name="comments_{{ t.id }}" value="{{ t.comments }}">{% else %}{{ t.comments }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input type="date" name="start_{{ t.id }}" value="{{ t.start_date.isoformat() if t.start_date else '' }}">{% else %}{{ m.start or '' }}{% endif %}</td>
-            <td>{% if rev.status == 'DRAFT' and not m.phase %}<input type="date" name="end_{{ t.id }}" value="{{ t.end_date.isoformat() if t.end_date else '' }}">{% else %}{{ m.end or '' }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input class="comment-input" name="comments_{{ t.id }}" value="{{ t.comments }}">{% else %}{{ t.comments }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input type="date" name="start_{{ t.id }}" value="{{ t.start_date.isoformat() if t.start_date else '' }}">{% else %}{{ m.start or '' }}{% endif %}</td>
+            <td>{% if not readonly and rev.status == 'DRAFT' and not m.phase %}<input type="date" name="end_{{ t.id }}" value="{{ t.end_date.isoformat() if t.end_date else '' }}">{% else %}{{ m.end or '' }}{% endif %}</td>
             {% for d in days %}<td class="gantt-cell {% if m.start and m.end and m.start <= d <= m.end %}active{% endif %}{% if d.weekday() >= 5 %} weekend{% endif %}"></td>{% endfor %}
           </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
-    {% if rev.status == 'DRAFT' %}<div class="form-footer"><button class="button primary" type="submit">Save Schedule Changes</button></div>{% endif %}
+    {% if not readonly and rev.status == 'DRAFT' %}<div class="form-footer"><button class="button primary" type="submit">Save Schedule Changes</button></div>{% endif %}
   </form>
 </div>
 {% endblock %}
