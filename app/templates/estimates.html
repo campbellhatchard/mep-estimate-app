@@ -2,7 +2,7 @@
 {% block content %}
 <div class="page-title">
   <div><h1>Estimates</h1><p>Create and manage controlled MEP and CIP services estimates.</p></div>
-  <a class="button primary" href="/estimates/new">+ New Estimate</a>
+  {% if can_author_estimates(user) %}<a class="button primary" href="/estimates/new">+ New Estimate</a>{% endif %}
 </div>
 <div class="toolbar product-toolbar">
   <input id="estimateSearch" placeholder="Search customer, estimate, product, deployment, status…" oninput="filterTable('estimateSearch','estimateTable')">
