@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .assumptions import EstimateAssumption
 from .cip_domain import _take_route, revision_product
 from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP
@@ -215,7 +216,7 @@ def register_revision_history(app, core):
     @app.post("/estimate/{rid}/new-revision")
     def new_revision(rid: int, request: Request, rebase: bool = False, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         src = core.revision_or_404(db, rid)
         if src.status not in LOCKED_STATUSES:
             raise HTTPException(409, "Create a new revision only from an Approved, Final, or Superseded revision.")
@@ -238,7 +239,7 @@ def register_revision_history(app, core):
         old = rev.status
 
         if action == "submit":
-            core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+            core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
             if old != "DRAFT":
                 raise HTTPException(409, "Only a Draft revision can be submitted for review.")
             new = "REVIEW"
