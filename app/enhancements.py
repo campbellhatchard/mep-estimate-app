@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from .permissions import can_author_estimates, can_prepare_sow
 from .database import get_db
 from .models import User, UserRole, ROLE_ORDER, ScheduleTask
 from .auth import current_user, require_role, normalize_username, hash_password
@@ -112,6 +113,8 @@ def ci_text(value):
 def configure_templates(templates):
     templates.env.filters["ci_term"] = ci_term
     templates.env.filters["ci_text"] = ci_text
+    templates.env.globals["can_author_estimates"] = can_author_estimates
+    templates.env.globals["can_prepare_sow"] = can_prepare_sow
     templates.env.globals["ROLE_OPTIONS"] = ROLE_ORDER
     templates.env.globals["ROLE_LABELS"] = ROLE_LABELS
 
