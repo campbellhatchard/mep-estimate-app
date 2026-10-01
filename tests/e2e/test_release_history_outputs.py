@@ -44,10 +44,10 @@ def test_historical_estimate_and_sow_remain_pinned_after_new_config_and_template
         old_hours = rev.calculated_hours; old_fees = rev.calculated_fees
         old_template_id = sow.template_version_id; old_composition = sow.composition_version; old_hash = sow.content_hash
         old_config = db.get(ConfigurationVersion, old_config_id); old_template = db.get(SOWTemplateVersion, old_template_id)
-        new_config = ConfigurationVersion(name=f"E2E Future MEP Config {rid}", status="ACTIVE", approval_status="ACTIVE", change_reason="Synthetic historical-pinning test configuration", created_by=rev.created_by, activated_at=utc_now())
+        new_config = ConfigurationVersion(name=f"E2E Future MEP Config {rid}", status="ACTIVE", approval_status="ACTIVE", change_reason="Synthetic historical-pinning test configuration", created_by=rev.created_by, created_at=utc_now(), activated_at=utc_now())
         db.add(new_config); db.flush(); db.add(ConfigurationProduct(config_version_id=new_config.id, product_type=PRODUCT_MEP))
         old_config.status = "RETIRED"; old_config.approval_status = "RETIRED"
-        new_template = SOWTemplateVersion(template_key=old_template.template_key, label=old_template.label, product_type=old_template.product_type, customer_type=old_template.customer_type, version_no=old_template.version_no + 1000, status="ACTIVE", filename=f"E2E_Future_{rid}.docx", content=old_template.content, content_sha256=old_template.content_sha256, change_reason="Synthetic historical template pin test", created_by=rev.created_by, activated_by=rev.created_by, activated_at=utc_now())
+        new_template = SOWTemplateVersion(template_key=old_template.template_key, label=old_template.label, product_type=old_template.product_type, customer_type=old_template.customer_type, version_no=old_template.version_no + 1000, status="ACTIVE", filename=f"E2E_Future_{rid}.docx", content=old_template.content, content_sha256=old_template.content_sha256, change_reason="Synthetic historical template pin test", created_by=rev.created_by, created_at=utc_now(), activated_by=rev.created_by, activated_at=utc_now())
         db.add(new_template); old_template.status = "RETIRED"; db.commit()
         new_config_id = new_config.id; new_template_id = new_template.id
 
