@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .cip_domain import estimate_product
 from .cip_models import CIPRevisionInput, EstimateProduct, PRODUCT_CIP, PRODUCT_MEP
 from .cip_revision import create_cip_estimate
@@ -33,13 +34,13 @@ def register_repository_routes(app, core, mep_create):
     @app.get("/estimates/new", response_class=HTMLResponse)
     def estimate_type_page(request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         return core.templates.TemplateResponse("estimate_type.html", {"request": request, "user": user})
 
     @app.post("/estimates/new")
     async def create_product_estimate(request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         form = await request.form()
         product_type = str(form.get("product_type", PRODUCT_MEP)).upper()
         if product_type == PRODUCT_MEP:
