@@ -4,6 +4,7 @@ from fastapi import HTTPException, Request
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from ..permissions import can_edit_sow
 from ..cip_domain import revision_product
 from ..cip_models import CIPRevisionInput, PRODUCT_CIP
 from ..models import EstimateRevision, User
@@ -36,7 +37,7 @@ def _cip_sow_context(db: Session, request: Request, core, sow: SOW, user) -> dic
         "inp": inp,
         "product_type": PRODUCT_CIP,
         "active_tab": "sow",
-        "readonly": sow.status != "DRAFT",
+        "readonly": not can_edit_sow(user, sow),
         "history": history,
         "approvers": sow_routes._active_sow_approvers(db),
         "users": users,
