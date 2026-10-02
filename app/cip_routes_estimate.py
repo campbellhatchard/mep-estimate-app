@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES, can_edit_estimate
 from .cip_domain import (
     _bool, _cip_context, _cip_input, _ensure_dynamic_scope, _float, _int, _update_cip_field,
     revision_product, sync_cip_catalog, validate_cip,
@@ -22,7 +23,7 @@ def register_estimate_routes(app, core, mep_estimate_get, mep_estimate_post, mep
         if revision_product(db, rev) == PRODUCT_MEP:
             return mep_estimate_get(rid, request, db)
         user = core.current_user(request, db)
-        ctx = _cip_context(db, rev); ctx.update({"request": request, "user": user})
+        ctx = _cip_context(db, rev); ctx.update({"request": request, "user": user, "readonly": not can_edit_estimate(user, rev)})
         return core.templates.TemplateResponse("cip_estimate.html", ctx)
 
     @app.post("/estimate/{rid}")
@@ -30,7 +31,7 @@ def register_estimate_routes(app, core, mep_estimate_get, mep_estimate_post, mep
         rev = core.revision_or_404(db, rid)
         if revision_product(db, rev) == PRODUCT_MEP:
             return await mep_estimate_post(rid, request, db)
-        user = core.current_user(request, db); core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        user = core.current_user(request, db); core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         if rev.status in ("APPROVED", "FINAL", "SUPERSEDED"):
             raise HTTPException(409, "Approved/final revisions are locked")
         inp = _cip_input(db, rid); form = await request.form(); old_release = inp.release_key
@@ -82,6 +83,6 @@ def register_estimate_routes(app, core, mep_estimate_get, mep_estimate_post, mep
         rev = core.revision_or_404(db, rid)
         if revision_product(db, rev) == PRODUCT_MEP:
             return mep_new_revision(rid, request, rebase, db)
-        user = core.current_user(request, db); core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        user = core.current_user(request, db); core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         new_rev = copy_cip_revision(db, core, rev, user, rebase)
         return RedirectResponse(f"/estimate/{new_rev.id}", 303)

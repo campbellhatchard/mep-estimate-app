@@ -56,3 +56,13 @@ A mapped test does not imply a passing requirement. The current run and exact te
 Audit coverage is representative: revision rationale and configuration event sequences are asserted, while exhaustive actor/reason checks and schedule-regeneration audit assertions remain gaps. Phase 1 intentionally does not duplicate every formula, migration, document permutation or Golden scenario in the browser. Cross-browser certification, full visual regression, load/performance testing and Production synthetic monitoring remain outside Phase 1.
 
 The 24-scenario Golden matrix is fixed in source control and never derives its expected values from the application at runtime. Before treating every value as a permanent locked business oracle, each scenario should retain traceable provenance to an approved rule/catalog or previously approved deterministic expected-results baseline. That provenance review is a governance task, not a reason to weaken a failing calculation test.
+
+## October 1 Read Only defect correction
+
+Design and acceptance mapping: [READ_ONLY_PERMISSION_FIX.md](READ_ONLY_PERMISSION_FIX.md).
+
+- `tests/test_readonly_ui_permissions.py`: 156 integration cases covering both products, eight role combinations, five estimate states, all four SOW families, locked SOW authoring, repository/revision controls, denied writes and initial schedule-generation side effects.
+- `tests/e2e/test_readonly_permissions.py`: six additional browser smoke/release cases for role switching, actual authoring, navigation, reload, read-only controls and preserved read actions.
+- References: DEF-RO-001, DEF-RO-002 and RO-006/008/040–043; related RO-015 generation gap.
+
+These engineering checks do not close the incomplete full interactive regression or count as production UAT passes. Keep deployment-specific browser retests and the original blocked/not-run coverage in the regression register.

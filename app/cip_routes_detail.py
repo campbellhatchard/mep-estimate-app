@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES, can_edit_estimate
 from .cip_domain import _float, _int, revision_product
 from .cip_models import CIPNonBillableAllocation, CIPScopeItem, PRODUCT_CIP, PRODUCT_MEP
 from .database import get_db
@@ -22,13 +23,13 @@ def register_detail_routes(app, core, mep_detail_get, mep_detail_post, mep_calc_
             rows = [x for x in details if x.section == name]
             rows = [x for x in rows if x.base_hours or x.added_hours or x.testing_adjustment or (x.definition.strip() and not (x.config_type == "No Config" and x.section in ("Custom Desktop Applications", "Custom Mobile Applications", "Reporting Development") and not (scope.get(x.key) and scope[x.key].description.strip())))]
             sections.append((name, rows, detail_summary.get(name, {})))
-        return core.templates.TemplateResponse("cip_detail.html", {"request": request, "user": user, "rev": rev, "estimate": rev.estimate, "sections": sections, "scope": scope, "summary": summary, "readonly": rev.status in ("APPROVED", "FINAL", "SUPERSEDED"), "product_type": PRODUCT_CIP})
+        return core.templates.TemplateResponse("cip_detail.html", {"request": request, "user": user, "rev": rev, "estimate": rev.estimate, "sections": sections, "scope": scope, "summary": summary, "readonly": not can_edit_estimate(user, rev), "product_type": PRODUCT_CIP})
 
     @app.post("/estimate/{rid}/detail")
     async def detail_save_dispatch(rid: int, request: Request, db: Session = Depends(get_db)):
         rev = core.revision_or_404(db, rid)
         if revision_product(db, rev) == PRODUCT_MEP: return await mep_detail_post(rid, request, db)
-        user = core.current_user(request, db); core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        user = core.current_user(request, db); core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         if rev.status in ("APPROVED", "FINAL", "SUPERSEDED"): raise HTTPException(409, "Revision is locked")
         form = await request.form(); count = _int(form, "line_count", 0)
         for idx in range(count):
@@ -54,13 +55,13 @@ def register_detail_routes(app, core, mep_detail_get, mep_detail_post, mep_calc_
         if revision_product(db, rev) == PRODUCT_MEP: return mep_calc_get(rid, request, db)
         user = core.current_user(request, db); lines, summary, _, _ = cip_calculation(db, rev)
         phases = [(phase, [x for x in lines if x.phase == phase], summary["phase_totals"][phase]) for phase in ["Plan", "Design", "Build", "Test", "Go Live"]]
-        return core.templates.TemplateResponse("cip_calculations.html", {"request": request, "user": user, "rev": rev, "estimate": rev.estimate, "phases": phases, "summary": summary, "readonly": rev.status in ("APPROVED", "FINAL", "SUPERSEDED"), "product_type": PRODUCT_CIP})
+        return core.templates.TemplateResponse("cip_calculations.html", {"request": request, "user": user, "rev": rev, "estimate": rev.estimate, "phases": phases, "summary": summary, "readonly": not can_edit_estimate(user, rev), "product_type": PRODUCT_CIP})
 
     @app.post("/estimate/{rid}/calculations")
     async def calculations_save_dispatch(rid: int, request: Request, db: Session = Depends(get_db)):
         rev = core.revision_or_404(db, rid)
         if revision_product(db, rev) == PRODUCT_MEP: return await mep_calc_post(rid, request, db)
-        user = core.current_user(request, db); core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        user = core.current_user(request, db); core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         if rev.status in ("APPROVED", "FINAL", "SUPERSEDED"): raise HTTPException(409, "Revision is locked")
         form = await request.form(); count = _int(form, "line_count", 0)
         adjustments = {x.line_key: x for x in db.query(CalculationAdjustment).filter(CalculationAdjustment.revision_id == rev.id).all()}

@@ -13,6 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from .permissions import ESTIMATE_AUTHOR_ROLES, can_author_estimates, can_edit_estimate
 from .database import Base, engine, get_db, SessionLocal
 from .models import *
 from .auth import authenticate, current_user, require_role, normalize_username, hash_password
@@ -176,7 +177,7 @@ def estimates(request:Request,db:Session=Depends(get_db)):
 
 @app.post("/estimates/new")
 def create_estimate(request:Request,db:Session=Depends(get_db)):
-    user=current_user(request,db); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     y=date.today().year
     seq=db.query(Estimate).filter(Estimate.estimate_number.like(f"{y}%")).count()+1
     number=f"{y}{seq:03d}"
@@ -194,7 +195,7 @@ def create_estimate(request:Request,db:Session=Depends(get_db)):
 
 @app.post("/estimate/{rid}/new-revision")
 def new_revision(rid:int,request:Request,rebase:bool=False,db:Session=Depends(get_db)):
-    user=current_user(request,db); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     src=revision_or_404(db,rid)
     maxrev=db.query(EstimateRevision).filter(EstimateRevision.estimate_id==src.estimate_id).order_by(desc(EstimateRevision.revision_no)).first().revision_no
     cv=active_config(db) if rebase else db.get(ConfigurationVersion,src.config_version_id)
@@ -218,12 +219,12 @@ def estimate_page(rid:int,request:Request,db:Session=Depends(get_db)):
     sync_catalog(db,rev,rev.erp); db.commit()
     recalc_lines,summary,details,summ=calculation(db,rev)
     ctx=estimate_ctx(db,rev); ctx.update({"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"summary":summary,
-      "apps":[a for a in rev.applications if a.kind=="APPLICATION"],"packages":[a for a in rev.applications if a.kind=="PACKAGE"],"customs":rev.custom_apps,"readonly":rev.status in ("APPROVED","FINAL","SUPERSEDED")})
+      "apps":[a for a in rev.applications if a.kind=="APPLICATION"],"packages":[a for a in rev.applications if a.kind=="PACKAGE"],"customs":rev.custom_apps,"readonly":not can_edit_estimate(user, rev)})
     return templates.TemplateResponse("estimate.html",ctx)
 
 @app.post("/estimate/{rid}")
 async def save_estimate(rid:int,request:Request,db:Session=Depends(get_db)):
-    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     if rev.status in ("APPROVED","FINAL","SUPERSEDED"): raise HTTPException(409,"Approved/final revisions are locked")
     form=await request.form(); old_erp=rev.erp
     text_fields=["customer","customer_type","opportunity_number","currency","entity","upgrade_type","project_type","erp","epp_install","epp_integration","user_count","go_live_type","security_method","delivery_method"]
@@ -265,11 +266,11 @@ def detail_page(rid:int,request:Request,db:Session=Depends(get_db)):
     for name in ["Upgrade Definition","Baseline Applications","Baseline Packages","Custom Applications","Labels","IoT Service Definitions","ERP Service Definitions","Data Replication Sessions"]:
         sections.append((name,[x for x in details if x.section==name],summ.get(name,{})))
     default_factor=Config(db,rev.config_version_id).param("UNIT_TEST_FACTOR")
-    return templates.TemplateResponse("detail.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"sections":sections,"summary":summary,"default_factor":default_factor,"readonly":rev.status in ("APPROVED","FINAL","SUPERSEDED")})
+    return templates.TemplateResponse("detail.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"sections":sections,"summary":summary,"default_factor":default_factor,"readonly":not can_edit_estimate(user, rev)})
 
 @app.post("/estimate/{rid}/detail")
 async def save_detail(rid:int,request:Request,db:Session=Depends(get_db)):
-    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     if rev.status in ("APPROVED","FINAL","SUPERSEDED"): raise HTTPException(409,"Revision is locked")
     form=await request.form()
     factor_raw=str(form.get("unit_test_factor_override","")).strip()
@@ -306,11 +307,11 @@ def calc_page(rid:int,request:Request,db:Session=Depends(get_db)):
     user=current_user(request,db); rev=revision_or_404(db,rid); lines,summary,_,_=calculation(db,rev)
     phases=[]
     for p in ["Plan","Design","Build","Test","Go Live"]: phases.append((p,[x for x in lines if x.phase==p],summary["phase_totals"][p]))
-    return templates.TemplateResponse("calculations.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"phases":phases,"summary":summary,"readonly":rev.status in ("APPROVED","FINAL","SUPERSEDED")})
+    return templates.TemplateResponse("calculations.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"phases":phases,"summary":summary,"readonly":not can_edit_estimate(user, rev)})
 
 @app.post("/estimate/{rid}/calculations")
 async def save_calculations(rid:int,request:Request,db:Session=Depends(get_db)):
-    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     if rev.status in ("APPROVED","FINAL","SUPERSEDED"): raise HTTPException(409,"Revision is locked")
     form=await request.form(); count=int(form.get("line_count",0) or 0)
     existing={a.line_key:a for a in db.query(CalculationAdjustment).filter(CalculationAdjustment.revision_id==rev.id).all()}
@@ -335,18 +336,18 @@ async def save_calculations(rid:int,request:Request,db:Session=Depends(get_db)):
 def schedule_page(rid:int,request:Request,db:Session=Depends(get_db)):
     user=current_user(request,db); rev=revision_or_404(db,rid)
     tasks=db.query(ScheduleTask).filter(ScheduleTask.revision_id==rev.id).order_by(ScheduleTask.sort_order).all()
-    if not tasks: tasks=generate_schedule(db,rev,replace=True); db.commit()
+    if not tasks and can_author_estimates(user): tasks=generate_schedule(db,rev,replace=True); db.commit()
     statuses=[x.label for x in Config(db,rev.config_version_id).by_cat.get("Schedule Status",[]) if x.active]
     # Gantt range is intentionally bounded to the generated task span.
     dated=[t for t in tasks if t.start_date and t.end_date]
     min_d=min((t.start_date for t in dated),default=rev.project_start or date.today()); max_d=max((t.end_date for t in dated),default=min_d+__import__('datetime').timedelta(days=30))
     days=[]; d=min_d
     while d<=max_d and len(days)<120: days.append(d); d+=__import__('datetime').timedelta(days=1)
-    return templates.TemplateResponse("schedule.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"tasks":tasks,"metrics":schedule_metrics(tasks),"statuses":statuses,"days":days,"readonly":rev.status in ("APPROVED","FINAL","SUPERSEDED")})
+    return templates.TemplateResponse("schedule.html",{"request":request,"user":user,"rev":rev,"estimate":rev.estimate,"tasks":tasks,"metrics":schedule_metrics(tasks),"statuses":statuses,"days":days,"readonly":not can_edit_estimate(user, rev)})
 
 @app.post("/estimate/{rid}/schedule")
 async def save_schedule(rid:int,request:Request,db:Session=Depends(get_db)):
-    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER")
+    user=current_user(request,db); rev=revision_or_404(db,rid); require_role(user,*ESTIMATE_AUTHOR_ROLES)
     if rev.status in ("APPROVED","FINAL","SUPERSEDED"): raise HTTPException(409,"Revision is locked")
     form=await request.form()
     if form.get("action")=="regenerate":
@@ -374,7 +375,7 @@ async def save_schedule(rid:int,request:Request,db:Session=Depends(get_db)):
 def status_action(rid:int,action:str,request:Request,db:Session=Depends(get_db)):
     user=current_user(request,db); rev=revision_or_404(db,rid)
     action=action.lower(); old=rev.status
-    if action=="submit": require_role(user,"ADMIN","ESTIMATOR","REVIEWER","APPROVER"); new="REVIEW"
+    if action=="submit": require_role(user,*ESTIMATE_AUTHOR_ROLES); new="REVIEW"
     elif action=="return": require_role(user,"ADMIN","REVIEWER","APPROVER"); new="DRAFT"
     elif action=="approve": require_role(user,"ADMIN","APPROVER"); new="APPROVED"
     elif action=="supersede": require_role(user,"ADMIN","APPROVER"); new="SUPERSEDED"

@@ -11,6 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
+from .permissions import ESTIMATE_AUTHOR_ROLES
 from .database import SessionLocal, get_db
 from .models import CalculationAdjustment, ConfigurationVersion, EstimateRevision
 from .cip_models import CIPNonBillableAllocation, PRODUCT_CIP, PRODUCT_MEP
@@ -105,7 +106,7 @@ def register_precision_routes(app, core):
     @app.post("/estimate/{rid}/calculations/preview")
     async def calculation_preview(rid: int, request: Request, db: Session = Depends(get_db)):
         user = core.current_user(request, db)
-        core.require_role(user, "ADMIN", "ESTIMATOR", "REVIEWER", "APPROVER")
+        core.require_role(user, *ESTIMATE_AUTHOR_ROLES)
         rev = core.revision_or_404(db, rid)
         if rev.status in LOCKED:
             return JSONResponse({"detail": "Revision is locked"}, status_code=409)

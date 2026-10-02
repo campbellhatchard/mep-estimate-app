@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from .cip_domain import _take_route, revision_product
 from .cip_models import PRODUCT_CIP
+from .permissions import can_author_estimates
 from .database import get_db
 from .jira_relationships import (
     JIRA_RELATIONSHIP_COLUMNS,
@@ -236,6 +237,8 @@ def register_schedule_exports(app, core) -> None:
         rev = core.revision_or_404(db, rid)
         tasks = _persisted_tasks(db, rev.id)
         if not tasks:
+            if not can_author_estimates(user):
+                raise HTTPException(409, "The Schedule has not been generated yet. An estimate author must generate it before export.")
             # Existing Jira behavior generated an initial schedule when none existed.
             # This is safe because there are no persisted user edits to overwrite.
             tasks = core.generate_schedule(db, rev, replace=True)
